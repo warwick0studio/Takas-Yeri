@@ -148,6 +148,19 @@
   @media(max-width:520px){.gi{width:76px;height:76px}.subgameTile .gi{width:70px;height:70px}}
   @media(max-width:520px){.homeTop{align-items:stretch;flex-direction:column}.gameTile{min-height:110px}}
 
+  /* rehber (ilk giriş) */
+  #tutorial{position:fixed;inset:0;z-index:50;background:rgba(5,7,12,.78);display:grid;place-items:center;padding:16px}
+  .tutCard{width:100%;max-width:440px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px 22px 18px;text-align:center}
+  .tutIc{font-size:44px}
+  .tutCard h2{font-size:19px;margin:8px 0}
+  .tutCard p{color:var(--muted);margin:0 0 18px}
+  .tutCard p b{color:var(--text)}
+  .tutDots{display:flex;gap:6px;justify-content:center;margin-bottom:16px}
+  .tutDots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+  .tutDots i.on{background:var(--accent)}
+  .tutBtns{display:flex;gap:8px;align-items:center}
+  .tutBtns .sp{flex:1}
+
 </style>
 </head>
 <body>
@@ -194,7 +207,7 @@
   <div class="wrap">
     <div class="bar">
       <h1>Takas<span>Yeri</span></h1>
-      <div class="who"><span class="muted small">Merhaba, <b id="me"></b></span><button class="ghost sm profileBtn" id="profileBtn"> <span>👤</span> Profil</button><button class="ghost sm" id="logout">Çıkış</button></div>
+      <div class="who"><span class="muted small">Merhaba, <b id="me"></b></span><button class="ghost sm" id="helpBtn">❓ Rehber</button><button class="ghost sm profileBtn" id="profileBtn"> <span>👤</span> Profil</button><button class="ghost sm" id="logout">Çıkış</button></div>
     </div>
 
     <section id="homeScreen">
@@ -276,6 +289,19 @@
   </div>
 </div>
 
+<div id="tutorial" class="hide">
+  <div class="tutCard">
+    <div id="tutBody"></div>
+    <div class="tutDots" id="tutDots"></div>
+    <div class="tutBtns">
+      <button type="button" class="ghost" id="tutSkip">Atla</button>
+      <span class="sp"></span>
+      <button type="button" class="ghost hide" id="tutBack">Geri</button>
+      <button type="button" id="tutNext">İleri</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -309,10 +335,7 @@ const BF_SITE=[
   ["Spring",60*K,1,"Stable","Common"],["Blade",50*K,1,"Stable","Common"],["Spin",7.5*K,1,"Stable","Common"],["Rocket",5*K,1,"Stable","Common"]
 ];
 // Sitede olmayanlar, senin eski listenden: [ad, regular, perm, talep, nadirlik]
-const BF_USER=[
-  ["Leopard",40*M,220*M,9,"Mythical"],["Rumble",5.5*M,110*M,8,"Legendary"],
-  ["Barrier",800*K,45*M,3,"Rare"],["Falcon",300*K,12*M,2,"Uncommon"]
-];
+const BF_USER=[];
 // Gamepass (9, liste tam): [ad, değer, talep, durum, robux fiyatı]
 const BF_PASS=[
   ["Fruit Notifier",2.54*B,9,"Stable","2.7K"],["Dark Blade",750*M,9,"Stable","1.2K"],["Mythical Scrolls",1.08*B,4,"Stable","1.5K"],
@@ -390,7 +413,7 @@ GAG_ROWS.forEach(([r,tier,v,names])=>names.forEach(n=>GAG[n]={v,p:null,d:null,t:
 
 const GAMES={
   "Blox Fruits":{
-    note:"Kaynak: bloxfruitsvalues.com. ✱ = topluluk listesinden eklenen değer. Perm değeri olmayan meyvelerde Perm düğmesi kapalıdır.",
+    note:"Kaynak: bloxfruitsvalues.com. Değerler topluluk tahminidir.",
     items:BF,
     stock:{sample:false,normalHours:4,mirageHours:2,normal:[],mirage:[],demo:{normal:["Rocket","Spin","Blade","Flame"],mirage:["Dough","Buddha","Spirit","Quake"]},prices:{"Rocket":[5000,50],"Spin":[7500,75],"Blade":[30000,100],"Flame":[250000,550]}}
   },
@@ -465,7 +488,10 @@ function imgErr(el){
   if(i<EXTS.length){el.dataset.e=i;el.src="img/"+el.dataset.s+"."+EXTS[i]}else el.remove();
 }
 
+let CLOUD=[];          // Supabase'den gelen ilanlar
+const EXPIRE_H=72;     // ilan kaç saat görünür kalsın
 function loadTrades(){
+  if(!DEMO)return CLOUD;
   try{const d=JSON.parse(get(K_TR));if(Array.isArray(d))return d}catch(e){}
   const n=Date.now(),m=(g,u,c,h,w,a)=>({id:crypto.randomUUID(),game:g,user:u,contact:c,have:h,want:w,t:n-a*60000});
   const s=[
@@ -578,6 +604,8 @@ function enter(){
   ME=get(K_USER);
   $("auth").classList.add("hide");$("app").classList.remove("hide");
   $("me").textContent=ME+(isVer()?" ✓":"");
+  maybeTutorial();
+  refreshTrades(true);
   showScreen("homeScreen");
   render();
 }
@@ -621,7 +649,7 @@ function openGame(id){
   S.game=id;S.sub="values";
   if(id==="Adopt Me"&&!S.cat[id])S.cat[id]="pet";
   $("activeGameName").textContent="/ "+id;
-  showScreen("gameWorkspace");render();
+  showScreen("gameWorkspace");render();refreshTrades(true);
 }
 ["robloxGrid","searchGrid"].forEach(gid=>$(gid).addEventListener("click",e=>{const b=e.target.closest("[data-subgame]");if(b)openGame(b.dataset.subgame)}));
 $("backHome").onclick=()=>showScreen("homeScreen");
@@ -736,14 +764,41 @@ document.addEventListener("click",e=>{
 });
 $("clear").onclick=()=>{S.sel[S.game]={have:[],want:[]};renderSel();renderResults()};
 
+/* --- ortak ilanlar (Supabase) --- */
+async function refreshTrades(silent){
+  if(DEMO||!sb)return;
+  const since=new Date(Date.now()-EXPIRE_H*3600e3).toISOString();
+  const {data,error}=await sb.from("trades")
+    .select("id,game,user_id,roblox_name,contact,have,want,boost,created_at")
+    .gte("created_at",since).order("created_at",{ascending:false}).limit(500);
+  if(error){console.error("İlanlar alınamadı:",error);if(!silent)toast("İlanlar yüklenemedi");return}
+  CLOUD=data.map(r=>({id:r.id,game:r.game,uid:r.user_id,user:r.roblox_name,contact:r.contact,have:r.have,want:r.want,boost:r.boost,ver:true,t:Date.parse(r.created_at)}));
+  renderResults();
+}
+// 30 saniyede bir yeni ilanları getir
+setInterval(()=>{if(!document.hidden&&!$("gameWorkspace").classList.contains("hide"))refreshTrades(true)},30000);
+
 /* --- ilan ver --- */
-$("post").onclick=()=>{
+$("post").onclick=async()=>{
   const sel=S.sel[S.game],c=$("contact").value.trim();
   if(!sel.have.length||!sel.want.length){toast("Hem 'elimde' hem 'istiyorum' seç");return}
   if(!c){toast("İletişim bilgisi yaz");$("contact").focus();return}
-  const a=loadTrades();
-  a.push({id:crypto.randomUUID(),game:S.game,user:ME,contact:c,have:[...sel.have],want:[...sel.want],t:Date.now(),boost:false,ver:isVer()});
-  saveTrades(a);toast("İlan yayınlandı");renderResults();
+  if(DEMO){
+    const a=loadTrades();
+    a.push({id:crypto.randomUUID(),game:S.game,user:ME,contact:c,have:[...sel.have],want:[...sel.want],t:Date.now(),boost:false,ver:isVer()});
+    saveTrades(a);toast("İlan yayınlandı");renderResults();return;
+  }
+  if(!isVer()){toast("İlan vermek için Roblox hesabını doğrulamalısın");return}
+  $("post").disabled=true;
+  const {error}=await sb.from("trades").insert({game:S.game,contact:c,have:sel.have,want:sel.want});
+  $("post").disabled=false;
+  if(error){
+    console.error(error);
+    toast(/ilan limiti/.test(error.message)?"En fazla 10 aktif ilan verebilirsin":"İlan yayınlanamadı");
+    return;
+  }
+  toast("İlan yayınlandı");
+  await refreshTrades(true);
 };
 
 /* --- eşleşen tradeler --- */
@@ -785,13 +840,29 @@ function renderResults(){
     </article>`}).join("")
     :`<div class="empty">${hasSel?"Bu seçime uygun trade yok. Başka item eklemeyi dene ya da ilan ver.":"Bu oyunda henüz trade yok."}</div>`;
 }
-$("results").addEventListener("click",e=>{
+$("results").addEventListener("click",async e=>{
   const bs=e.target.closest("[data-boost]");
-  if(bs){const a=loadTrades(),t=a.find(x=>x.id===bs.dataset.boost);if(t){t.boost=!t.boost;saveTrades(a);toast(t.boost?"İlan öne çıkarıldı (demo)":"Öne çıkarma kaldırıldı");renderResults()}return}
+  if(bs){
+    if(!DEMO){toast("Öne çıkarma yakında (ücretli olacak)");return}
+    const a=loadTrades(),t=a.find(x=>x.id===bs.dataset.boost);
+    if(t){t.boost=!t.boost;saveTrades(a);toast(t.boost?"İlan öne çıkarıldı (demo)":"Öne çıkarma kaldırıldı");renderResults()}
+    return;
+  }
   const d=e.target.closest("[data-del]");
-  if(d){if(confirm("İlan silinsin mi?")){saveTrades(loadTrades().filter(x=>x.id!==d.dataset.del));renderResults()}return}
+  if(d){
+    if(!confirm("İlan silinsin mi?"))return;
+    if(DEMO){saveTrades(loadTrades().filter(x=>x.id!==d.dataset.del));renderResults();return}
+    const {error}=await sb.from("trades").delete().eq("id",d.dataset.del);
+    if(error){console.error(error);toast("İlan silinemedi");return}
+    toast("İlan silindi");
+    await refreshTrades(true);
+    return;
+  }
   const c=e.target.closest("[data-ct]");
-  if(c){const t=loadTrades().find(x=>x.id===c.dataset.ct);if(t){const o=document.querySelector(`[data-out="${c.dataset.ct}"]`);o.textContent=t.contact+" — takası sadece oyun içinde yap.";c.remove()}}
+  if(c){
+    const t=loadTrades().find(x=>x.id===c.dataset.ct);
+    if(t){const o=document.querySelector(`[data-out="${c.dataset.ct}"]`);o.textContent=t.contact+" — takası sadece oyun içinde yap.";c.remove()}
+  }
 });
 
 /* ================= STOK ================= */
@@ -867,6 +938,34 @@ function buildAdmin(){
   $("admCopy").onclick=()=>{build();$("admOut").select();try{navigator.clipboard.writeText($("admOut").value)}catch(e){document.execCommand("copy")}};
 }
 setInterval(tickStock,1000);setInterval(pullStock,60000);
+
+/* ================= REHBER (ilk giriş) ================= */
+const K_TUT="ty_tutorial_v1";
+const TUT=[
+  {ic:"👋",t:"TakasYeri'ne hoş geldin!",p:"Burada oyun içi itemlerinin değerine bakabilir, takas ilanı verebilir ve sana uygun tradeleri bulabilirsin. Nasıl çalıştığını 1 dakikada gösterelim."},
+  {ic:"📊",t:"1. Item değerlerine bak",p:"Bir oyun seç (örneğin Blox Fruits), sonra <b>Değerler</b> sekmesinde itemlerin topluluk değerini, talebini ve durumunu gör. Üstteki arama kutusuyla item bulabilirsin."},
+  {ic:"🎒",t:"2. Elinde ne var, ne istiyorsun?",p:"Bir itemin kartında <b>+ Elimde</b> (elinde varsa) veya <b>+ İstiyorum</b> (istiyorsan) düğmesine bas. Aynısını <b>Trade</b> sekmesindeki arama kutularından da yapabilirsin."},
+  {ic:"🔎",t:"3. Sana uygun tradeleri gör",p:"Seçtiklerine göre <b>Trade</b> sekmesinde uygun ilanlar kendiliğinden çıkar. <b>Tam uyum</b>: hem verdiğin hem istediğin item eşleşiyor. <b>Kısmi uyum</b>: sadece biri eşleşiyor. Yanındaki rozet takasın adil olup olmadığını gösterir."},
+  {ic:"📣",t:"4. İlan ver, iletişime geç",p:"Uygun ilan yoksa iletişim bilgini (Discord vb.) yazıp <b>İlan ver</b>'e bas; ilanın herkese görünür. Başkasının ilanında <b>İletişimi göster</b>'e basıp ona ulaş."},
+  {ic:"🛡️",t:"Güvenli takas",p:"Şifreni veya doğrulama kodunu asla kimseyle paylaşma. Takası sadece oyunun kendi takas sistemiyle, oyun içinde yap. Değerler resmî değil, topluluk tahminidir."}
+];
+let tutI=0;
+function tutRender(){
+  const s=TUT[tutI],last=tutI===TUT.length-1;
+  $("tutBody").innerHTML=`<div class="tutIc">${s.ic}</div><h2>${s.t}</h2><p>${s.p}</p>`;
+  $("tutDots").innerHTML=TUT.map((_,i)=>`<i class="${i===tutI?"on":""}"></i>`).join("");
+  $("tutBack").classList.toggle("hide",tutI===0);
+  $("tutSkip").classList.toggle("hide",last);
+  $("tutNext").textContent=last?"Başla":"İleri";
+}
+function tutOpen(){tutI=0;tutRender();$("tutorial").classList.remove("hide")}
+function tutClose(){$("tutorial").classList.add("hide");set(K_TUT,"1")}
+function maybeTutorial(){if(!get(K_TUT))tutOpen()}
+$("tutNext").onclick=()=>{if(tutI<TUT.length-1){tutI++;tutRender()}else tutClose()};
+$("tutBack").onclick=()=>{if(tutI>0){tutI--;tutRender()}};
+$("tutSkip").onclick=tutClose;
+$("helpBtn").onclick=tutOpen;
+$("tutorial").addEventListener("click",e=>{if(e.target===$("tutorial"))tutClose()});
 
 /* ================= BAŞLAT ================= */
 if(location.hash==="#demo"){const st=GAMES["Blox Fruits"].stock;st.sample=true;st.normal=st.demo.normal;st.mirage=st.demo.mirage}
