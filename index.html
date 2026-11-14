@@ -1,0 +1,878 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TakasYeri - V13 (hata ayıklama)</title>
+<style>
+  :root{--bg:#0f1117;--panel:#181b25;--panel2:#1f2330;--line:#2b3040;--text:#e8eaf0;--muted:#9aa1b5;--accent:#6c8cff;--good:#3ecf8e;--warn:#f5b74a;--bad:#ef6a6a}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .hide{display:none!important}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 16px 50px}
+  h1{margin:0;font-size:22px} h1 span{color:var(--accent)}
+  h2{font-size:16px;margin:0 0 10px}
+  .muted{color:var(--muted)} .small{font-size:13px}
+  input[type=text],input:not([type]){width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:10px;font:inherit}
+  input:focus{outline:2px solid var(--accent)}
+  label{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px}
+  button{background:var(--accent);color:#fff;border:0;border-radius:9px;padding:10px 14px;font:inherit;font-weight:600;cursor:pointer}
+  button:hover{filter:brightness(1.1)}
+  button:disabled{opacity:.35;cursor:not-allowed;filter:none}
+  button.ghost{background:var(--panel2);border:1px solid var(--line);color:var(--text);font-weight:500}
+  button.sm{padding:5px 10px;font-size:13px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+
+  #auth{min-height:100vh;display:grid;place-items:center;padding:16px}
+  #auth .card{width:100%;max-width:380px}
+  .capRow{display:flex;gap:8px;align-items:center}
+  canvas{border-radius:9px;border:1px solid var(--line);background:var(--panel2)}
+  .err{color:var(--bad);font-size:13px;margin-top:8px;min-height:18px}
+
+  .bar{display:flex;justify-content:space-between;align-items:center;padding:16px 0 8px;gap:10px}
+  .who{display:flex;gap:10px;align-items:center}
+  .notice{background:#2a2416;border:1px solid #4a3d1c;color:#f0d9a0;border-radius:10px;padding:8px 12px;font-size:13px;margin:6px 0 14px}
+
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .tab{background:var(--panel2);border:1px solid var(--line);color:var(--muted);padding:9px 16px;border-radius:10px;cursor:pointer;font-weight:600}
+  .tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .subtabs{display:flex;border-bottom:1px solid var(--line);margin-bottom:16px}
+  .subtab{padding:10px 18px;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;font-weight:600}
+  .subtab.on{color:var(--text);border-color:var(--accent)}
+
+  /* fotoğraf alanı: img/<ad>.png yoksa baş harf görünür */
+  .ph{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:none;background:#000;border:1px solid var(--line);border-radius:10px;overflow:hidden;color:var(--muted);font-weight:700}
+  .ph::before{content:attr(data-l)}
+  .ph.ok::before{display:none}
+  .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+  .ph.l{width:64px;height:64px;font-size:26px}
+  .ph.s{width:22px;height:22px;font-size:11px;border-radius:6px}
+
+  .cats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .cat{background:var(--panel2);border:1px solid var(--line);color:var(--muted);padding:6px 12px;border-radius:9px;cursor:pointer;font-weight:600;font-size:13.5px}
+  .cat span{opacity:.7;font-size:12px;margin-left:4px}
+  .cat.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .stkbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+  .stkh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .stkh h2{margin:0 0 2px}
+  .grid .empty{grid-column:1/-1}
+  .stkt{text-align:right}
+  .timer{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+  .vm b{color:var(--text)}
+  .gnote{font-size:12.5px;color:var(--muted);margin:10px 0 14px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+  .vcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+  .vh{display:flex;gap:10px;align-items:center}
+  .vn{font-weight:700;line-height:1.25}
+  .rar{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:999px;margin-top:3px;font-weight:600}
+  .r-Mythical{background:#3b1d44;color:#e4a4ff} .r-Legendary{background:#3d3115;color:#ffd470}
+  .r-Gamepass{background:#14303a;color:#7fdcf0} .r-Limited{background:#3a1d2c;color:#ff9fc4}
+  .r-Divine{background:#4a3a14;color:#ffe08a} .r-Prismatic{background:#3b1d44;color:#ffb3f0}
+  .r-Rare{background:#16304a;color:#8fc8ff} .r-Uncommon{background:#143a2a;color:#8ee8b8} .r-Common{background:#2a2f3d;color:#b8bfd2}
+  .r-Epic{background:#34204b;color:#d6a6ff} .r-Mythic{background:#4b202d;color:#ff9fba} .r-Secret{background:#34214f;color:#d8b4ff} .r-OG{background:#4a3217;color:#ffd78a} .r-Brainrot\ God{background:#1e3545;color:#9edcff}
+  .seg{display:grid;grid-template-columns:1fr 1fr;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+  .seg button{background:transparent;color:var(--muted);padding:6px 4px;font-size:13px;font-weight:600;border-radius:8px}
+  .seg button.on{background:var(--accent);color:#fff}
+  .vv{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
+  .vm{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);gap:6px;flex-wrap:wrap}
+  .tr-s{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--panel2);border:1px solid var(--line)}
+  .tr-Unstable{color:var(--bad)} .tr-Overpaid{color:var(--warn)} .tr-Underpaid{color:var(--good)} .tr-Fluctuating{color:#c79bff} .tr-Stable{color:var(--muted)}
+  .vadd{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:auto}
+
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:720px){.two{grid-template-columns:1fr}}
+  .box h2{display:flex;justify-content:space-between;align-items:baseline}
+  .box h2 b{font-size:13px;color:var(--muted);font-weight:600}
+  .sugg{position:relative}
+  .sugg .dd{position:absolute;left:0;right:0;top:100%;z-index:5;background:var(--panel2);border:1px solid var(--line);border-radius:9px;margin-top:4px;max-height:260px;overflow:auto}
+  .sugg .dd div{padding:7px 10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .sugg .dd div:hover{background:#2a3045}
+  .sugg .dd .nm{display:flex;align-items:center;gap:8px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;min-height:30px}
+  .chip{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:3px 9px 3px 4px;font-size:13.5px;display:inline-flex;gap:6px;align-items:center}
+  .chip i{font-style:normal;color:var(--muted);font-size:12px}
+  .chip.x{cursor:pointer}
+  .chip.x:hover{border-color:var(--bad)}
+  .chip.hit{border-color:var(--good);color:#a8f0cf}
+  .postRow{display:flex;gap:8px;margin-top:14px;align-items:end}
+  .postRow>div{flex:1}
+  h3{margin:22px 0 10px;font-size:15px}
+  .list{display:grid;gap:10px}
+  .tr{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .tr .top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
+  .tr .rows{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+  @media(max-width:720px){.tr .rows{grid-template-columns:1fr}}
+  .tr .lab{font-size:12px;color:var(--muted);margin-bottom:4px}
+  .badge{font-size:12px;padding:2px 9px;border-radius:999px;font-weight:700}
+  .b-full{background:#12392a;color:var(--good)} .b-part{background:#3a2f12;color:var(--warn)}
+  .b-fair{background:#12392a;color:var(--good)} .b-over{background:#3a2f12;color:var(--warn)} .b-under{background:#3d1a1a;color:var(--bad)}
+  .acts{margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .empty{text-align:center;color:var(--muted);padding:26px}
+  .adslot{border:1px dashed var(--line);border-radius:12px;padding:16px;text-align:center;color:var(--muted);font-size:13px;margin:12px 0;background:repeating-linear-gradient(45deg,transparent 0 10px,#151822 10px 20px)}
+  .adslot span{font-size:12px;opacity:.8}
+  .tr.boosted{border-color:#8a6a1f;box-shadow:0 0 0 1px #8a6a1f33}
+  .b-boost{background:#3d3115;color:#ffd470}
+  .vbadge{color:var(--good);font-weight:800}
+  .codeBox{background:var(--panel2);border:1px dashed var(--accent);border-radius:10px;padding:12px;margin-top:12px}
+  .codeBox .code{font:800 24px monospace;letter-spacing:2px;color:var(--accent);user-select:all}
+  .codeBox ol{margin:8px 0 10px 18px;padding:0;font-size:13px;color:var(--muted)}
+  #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#222a45;border:1px solid var(--line);padding:8px 14px;border-radius:10px;font-size:13px;opacity:0;transition:.2s;pointer-events:none}
+  #toast.on{opacity:1}
+
+  .homeTop{display:flex;gap:12px;align-items:center;margin:18px 0}
+  .homeSearch{flex:1}
+  .gameGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:16px}
+  .gameTile{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;text-align:left;color:var(--text);min-height:135px;display:flex;flex-direction:column;justify-content:space-between;transition:.15s}
+  .gameTile:hover{border-color:var(--accent);transform:translateY(-2px)}
+  .gameTile strong{font-size:19px}
+  .gameTile .gameIcon{font-size:30px}
+  .gameIconImg{width:76px;height:76px;object-fit:contain;border-radius:13px;display:block;background:#111722;border:1px solid var(--line);padding:3px}
+  .subgameTile .gameIconImg{width:82px;height:82px;flex:none}
+  .gameTile{gap:12px}
+  .gameTile .gameIconImg{width:92px;height:92px}
+  @media(max-width:520px){.gameTile .gameIconImg{width:76px;height:76px}.subgameTile .gameIconImg{width:70px;height:70px}}
+  .subgameGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:16px}
+  .subgameTile{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;color:var(--text);text-align:left;display:flex;align-items:center;gap:12px}
+  .subgameTile:hover{border-color:var(--accent)}
+  .subgameTile .gameIcon{font-size:28px}
+  .homeHead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:22px 0 8px}
+  .crumb{display:flex;align-items:center;gap:8px;margin:16px 0}
+  .profileBtn{display:flex;align-items:center;gap:7px}
+  /* oyun ikonu: dosya yoksa baş harf görünür */
+  .gi{position:relative;width:92px;height:92px;flex:none;border-radius:13px;background:#111722;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:800;color:var(--muted);overflow:hidden}
+  .gi img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:3px}
+  .gi.noimg img{display:none}
+  .subgameTile .gi{width:82px;height:82px}
+  .soonBadge{display:inline-block;font-size:11.5px;font-weight:700;padding:1px 8px;border-radius:999px;background:#3a2f12;color:var(--warn);vertical-align:middle}
+  .gameTile .soonBadge{align-self:flex-start}
+  @media(max-width:520px){.gi{width:76px;height:76px}.subgameTile .gi{width:70px;height:70px}}
+  @media(max-width:520px){.homeTop{align-items:stretch;flex-direction:column}.gameTile{min-height:110px}}
+
+</style>
+</head>
+<body>
+
+<!-- GİRİŞ -->
+<div id="auth">
+  <div class="card">
+    <h1>Takas<span>Yeri</span></h1>
+    <p class="muted small" style="margin:6px 0 0">Oyun içi itemlerini takas et. Devam etmek için Gmail ile giriş yap ve Roblox hesabını doğrula.</p>
+    <div class="notice hide" id="demoBanner" style="margin-top:12px">DEMO modu: Supabase bilgileri girilmediği için Gmail ve Roblox doğrulaması gerçekten kontrol edilmiyor. Gerçek giriş için KURULUM.md'yi uygula.</div>
+
+    <div id="stepA" style="margin-top:14px">
+      <button type="button" id="gBtn" class="hide" style="width:100%">Google ile giriş yap</button>
+      <div id="demoMail" class="hide">
+        <label for="demoEmail">Gmail adresi (demo)</label>
+        <input type="text" id="demoEmail" inputmode="email" maxlength="60" placeholder="ornek@gmail.com">
+        <button type="button" id="demoGo" style="width:100%;margin-top:10px">Devam</button>
+      </div>
+    </div>
+
+    <div id="stepB" class="hide" style="margin-top:14px">
+      <div class="muted small">Giriş yapılan hesap: <b id="accMail"></b></div>
+      <label for="rbName">Roblox kullanıcı adın</label>
+      <input type="text" id="rbName" maxlength="20" placeholder="Roblox adın" autocomplete="off">
+      <button type="button" id="rbStart" style="width:100%;margin-top:10px">Doğrulama kodu al</button>
+      <div class="codeBox hide" id="rbCodeBox">
+        <div class="small muted">Doğrulama kodun</div>
+        <div class="code" id="rbCode"></div>
+        <ol>
+          <li>Roblox'ta profilini aç, <b>Hakkında</b> (About) kısmına bu kodu yapıştır ve kaydet.</li>
+          <li>Buraya dönüp <b>Doğrula</b>'ya bas. Kodu doğruladıktan sonra profilinden silebilirsin.</li>
+        </ol>
+        <button type="button" id="rbCheck" style="width:100%">Doğrula</button>
+      </div>
+    </div>
+
+    <div class="err" id="err"></div>
+    <div class="muted small" style="margin-top:6px">Roblox şifreni asla istemeyiz ve girmen gerekmez.</div>
+  </div>
+</div>
+
+<!-- UYGULAMA -->
+<div id="app" class="hide">
+  <div class="wrap">
+    <div class="bar">
+      <h1>Takas<span>Yeri</span></h1>
+      <div class="who"><span class="muted small">Merhaba, <b id="me"></b></span><button class="ghost sm profileBtn" id="profileBtn"> <span>👤</span> Profil</button><button class="ghost sm" id="logout">Çıkış</button></div>
+    </div>
+
+    <section id="homeScreen">
+      <div class="homeTop">
+        <input class="homeSearch" id="gameSearch" type="text" placeholder="Oyun ara...">
+      </div>
+      <div class="homeHead"><h2>Oyunlar</h2><span class="muted small">Devam etmek için bir oyun seç</span></div>
+      <div class="gameGrid" id="platformGrid"></div>
+      <div id="searchWrap" class="hide">
+        <div class="homeHead"><h2>Roblox oyunları</h2><span class="muted small">Aramanla eşleşenler</span></div>
+        <div class="subgameGrid" id="searchGrid"></div>
+      </div>
+      <div class="empty hide" id="searchEmpty">Oyun bulunamadı.</div>
+      <div class="notice" style="margin-top:18px">TakasYeri'nde oyunların kendi kurallarına uygun hareket et. Şifreni, doğrulama kodlarını veya hesabını kimseyle paylaşma.</div>
+    </section>
+
+    <section id="robloxScreen" class="hide">
+      <div class="crumb"><button class="ghost sm" id="backHome">← Oyunlara dön</button><span class="muted">/ Roblox</span></div>
+      <div class="homeHead"><h2>Roblox oyununu seç</h2><span class="muted small">Bir oyun seçerek devam et</span></div>
+      <div class="subgameGrid" id="robloxGrid"></div>
+    </section>
+
+    <section id="comingScreen" class="hide">
+      <div class="crumb"><button class="ghost sm" id="backHome2">← Oyunlara dön</button><span class="muted" id="comingCrumb"></span></div>
+      <div class="card" style="text-align:center;padding:34px 18px">
+        <div style="font-size:42px">🚧</div><h2 id="comingTitle">Yakında</h2>
+        <p class="muted" id="comingText">Bu oyun için bölüm henüz hazırlanıyor.</p>
+      </div>
+    </section>
+
+    <section id="gameWorkspace" class="hide">
+    <div class="crumb"><button class="ghost sm" id="backRoblox">← Roblox oyunlarına dön</button><span class="muted" id="activeGameName"></span></div>
+    <div class="notice" id="gameNotice">Değerler topluluk tahminidir. Takasları yalnızca oyunun izin verdiği yöntemlerle yap; şifre veya doğrulama kodu paylaşma.</div>
+    <div id="adTop"></div>
+    <div class="tabs" id="gameTabs"></div>
+    <div class="subtabs">
+      <div class="subtab" data-s="values">Değerler</div>
+      <div class="subtab" data-s="trade">Trade</div>
+      <div class="subtab" data-s="stock">Stok</div>
+    </div>
+
+    <!-- DEĞERLER -->
+    <section id="pValues">
+      <div class="cats" id="cats"></div>
+      <input type="text" id="vSearch" placeholder="Item ara...">
+      <div class="gnote" id="gNote"></div>
+      <div class="grid" id="vGrid"></div>
+      <div id="adVals" style="margin-top:14px"></div>
+    </section>
+
+    <!-- STOK -->
+    <section id="pStock" class="hide"><div id="stkAdm"></div><div id="stkBody"></div></section>
+
+    <!-- TRADE -->
+    <section id="pTrade" class="hide">
+      <div class="two">
+        <div class="card box">
+          <h2>Elinde ne var? <b>Toplam: <span id="tHave">0</span></b></h2>
+          <div class="sugg"><input type="text" id="inHave" placeholder="Item ara ve ekle..." autocomplete="off"><div class="dd hide" id="ddHave"></div></div>
+          <div class="chips" id="chHave"></div>
+        </div>
+        <div class="card box">
+          <h2>Ne istiyorsun? <b>Toplam: <span id="tWant">0</span></b></h2>
+          <div class="sugg"><input type="text" id="inWant" placeholder="Item ara ve ekle..." autocomplete="off"><div class="dd hide" id="ddWant"></div></div>
+          <div class="chips" id="chWant"></div>
+        </div>
+      </div>
+
+      <div class="postRow">
+        <div><label for="contact" style="margin-top:0">İletişim (Discord vb.) — ilan vermek için</label><input type="text" id="contact" maxlength="40" placeholder="@kullanici"></div>
+        <button id="post">İlan ver</button>
+        <button class="ghost" id="clear">Temizle</button>
+      </div>
+
+      <h3 id="resTitle">Uygun tradeler</h3>
+      <div class="list" id="results"></div>
+    </section>
+    </section>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ================= DEĞERLER =================
+   v = Regular (fiziksel) değer, p = Perm değer (yoksa null), d = talep (1-10),
+   t = durum, r = nadirlik, s = kaynak
+   s:"s" -> bloxfruitsvalues.com (Regular), s:"u" -> sitede bulunamadı, senin listenden (✱)
+   Değerleri değiştirmek için sadece bu bölümü düzenle.
+
+   FOTOĞRAFLAR: bu dosyanın yanına "img" klasörü aç, içine meyve adıyla koy:
+   kitsune.png, west-dragon.png, t-rex.png ... (küçük harf, boşluk yerine tire; png/webp/jpg olur)
+   Dosya yoksa kartta baş harf görünür. */
+const K=1e3, M=1e6, B=1e9;
+
+// Siteden (Regular değerler, tam liste): [ad, regular, talep, durum, nadirlik]
+const BF_SITE=[
+  ["West Dragon",2.7*B,8,"Stable","Mythical"],["East Dragon",2.25*B,8,"Stable","Mythical"],["Kitsune",450*M,10,"Stable","Mythical"],
+  ["Magnet",330*M,7,"Stable","Mythical"],["Venom",110*M,10,"Fluctuating","Mythical"],["Control",90*M,7,"Stable","Mythical"],
+  ["Tiger",80*M,7,"Underpaid","Mythical"],["Yeti",70*M,6,"Underpaid","Mythical"],["Gas",60*M,10,"Overpaid","Mythical"],
+  ["Dough",30*M,10,"Overpaid","Mythical"],["Lightning",20*M,6,"Stable","Legendary"],["T-Rex",20*M,8,"Stable","Mythical"],
+  ["Pain",10*M,5,"Stable","Legendary"],["Gravity",10*M,5,"Stable","Mythical"],["Mammoth",10*M,5,"Stable","Mythical"],
+  ["Spirit",10*M,7,"Stable","Mythical"],["Portal",10*M,10,"Overpaid","Legendary"],["Buddha",10*M,10,"Overpaid","Legendary"],
+  ["Shadow",6.5*M,5,"Stable","Mythical"],["Blizzard",5*M,5,"Stable","Legendary"],["Phoenix",2.75*M,3,"Stable","Legendary"],
+  ["Creation",2.5*M,2,"Stable","Legendary"],["Sound",2.5*M,4,"Stable","Legendary"],["Spider",1.5*M,2,"Stable","Legendary"],
+  ["Love",1.5*M,3,"Stable","Legendary"],["Magma",1.15*M,5,"Overpaid","Rare"],["Quake",1*M,2,"Stable","Legendary"],
+  ["Diamond",1*M,2,"Stable","Uncommon"],["Light",800*K,2,"Stable","Rare"],["Ghost",800*K,1,"Underpaid","Rare"],
+  ["Eagle",800*K,2,"Stable","Uncommon"],["Rubber",700*K,1,"Stable","Rare"],["Ice",550*K,2,"Stable","Uncommon"],
+  ["Sand",420*K,1,"Stable","Uncommon"],["Dark",400*K,1,"Stable","Uncommon"],["Flame",250*K,1,"Stable","Uncommon"],
+  ["Spike",180*K,1,"Stable","Common"],["Smoke",100*K,1,"Stable","Common"],
+  ["Bomb",70*K,1,"Stable","Common"], // sitede "70M" yazıyordu (o satırda Robux fiyatı karışmış), ortak meyve için 70K aldım, kontrol et
+  ["Spring",60*K,1,"Stable","Common"],["Blade",50*K,1,"Stable","Common"],["Spin",7.5*K,1,"Stable","Common"],["Rocket",5*K,1,"Stable","Common"]
+];
+// Sitede olmayanlar, senin eski listenden: [ad, regular, perm, talep, nadirlik]
+const BF_USER=[
+  ["Leopard",40*M,220*M,9,"Mythical"],["Rumble",5.5*M,110*M,8,"Legendary"],
+  ["Barrier",800*K,45*M,3,"Rare"],["Falcon",300*K,12*M,2,"Uncommon"]
+];
+// Gamepass (9, liste tam): [ad, değer, talep, durum, robux fiyatı]
+const BF_PASS=[
+  ["Fruit Notifier",2.54*B,9,"Stable","2.7K"],["Dark Blade",750*M,9,"Stable","1.2K"],["Mythical Scrolls",1.08*B,4,"Stable","1.5K"],
+  ["Legendary Scrolls",480*M,3,"Stable","800"],["+1 Fruit Storage",270*M,10,"Overpaid","400"],["2x Mastery",300*M,10,"Overpaid","450"],
+  ["2x Money",300*M,10,"Overpaid","450"],["2x Boss Drops",180*M,8,"Overpaid","350"],["Fast Boats",180*M,9,"Overpaid","350"]
+];
+// Limited (sitede 41, burada 16 tanesi var; kalanlar eklenecek): [ad, değer (null = N/A), talep, durum, robux fiyatı]
+const BF_LIM=[
+  ["Permanent Dragon Token",null,6,"Overpaid",null],["Hellfire Gas",120*M,5,"Unstable","1.25K"],["Doghouse (Frame Break)",11.04*B,8,"Unstable",null],
+  ["Rabid Dog Blade",21.42*B,8,"Unstable",null],["Dog Blade",1.8*B,10,"Overpaid",null],["Fiend Yeti",930*M,7,"Stable",null],
+  ["Galaxy Empyrean Kitsune",8.46*B,10,"Overpaid",null],["Ember West Dragon",5.97*B,10,"Overpaid",null],["Crimson Kitsune",6.09*B,7,"Stable","2K"],
+  ["Vibe (Frame Break)",8.19*B,8,"Unstable",null],["Arcsteel Magnet",1.83*B,6,"Stable",null],["Runic Fiend",1.38*B,8,"Stable",null],
+  ["Starlight Gravity",300*M,7,"Stable",null],["Scarlet Ghost",20*M,4,"Stable",null],["Lime Blade",10*M,2,"Stable",null],["Meme-Meme",5.76*B,9,"Overpaid",null]
+];
+const BF={};
+BF_USER.forEach(([n,v,p,d,r])=>BF[n]={v,p,d,t:null,r,s:"u",c:"fruit"});
+BF_SITE.forEach(([n,v,d,t,r,p])=>BF[n]={v,p:p||null,d,t,r,s:"s",c:"fruit"}); // 6. eleman (isteğe bağlı) = Perm değeri
+BF_PASS.forEach(([n,v,d,t,rb])=>BF[n]={v,p:null,d,t,r:"Gamepass",s:"s",c:"gamepass",rb});
+BF_LIM.forEach(([n,v,d,t,rb])=>BF[n]={v,p:null,d,t,r:"Limited",s:"s",c:"limited",rb});
+
+const mk=o=>{const r={};Object.entries(o).forEach(([n,v])=>r[n]={v,p:null,d:null,t:null,r:null,s:"x"});return r};
+// Temel kazançlar ($/s) — mevcut SAB gelir tablosu.
+// Topluluk takas puanları ayrı tutulur; bunlar oyun içi para veya USD değildir.
+const SAB_ROWS = [
+  ["Holy Arepa","14","Common"],["Pipi Corni","14","Common"],["Pipi Kiwi","13","Common"],["Tartaragno","13","Common"],["Raccooni Jandelini","12","Common"],["Noobini Santanini","11","Common"],["Svinina Bombardino","10","Common"],["Talpa Di Fero","9","Common"],["Fluriflura","7","Common"],["TIM Cheese","5","Common"],["Lirilì Larilà","3","Common"],["Noobini Pizzanini","1","Common"],
+  ["Pinealotto Fruttarino","75","Rare"],["Pengolino Nuvoletto","72","Rare"],["Pipi Avocado","70","Rare"],["Frogo Elfo","67","Rare"],["Tric Trac Baraboom","65","Rare"],["Cupcake Koala","60","Rare"],["Ta Ta Ta Ta Sahur","55","Rare"],["Cacto Hipopotamo","50","Rare"],["Boneca Ambalabu","40","Rare"],["Bandito Bobritto","35","Rare"],["Gangster Footera","30","Rare"],["Trippi Troppi","15","Rare"],
+  ["Mummio Rappitto","325","Epic"],["Penguino Cocosino","300","Epic"],["Wombo Rollo","275","Epic"],["Penguin Tree","270","Epic"],["Doi Doi Do","260","Epic"],["Gato Celesto","250","Epic"],["Salamino Penguino","250","Epic"],["Frogato Pirato","240","Epic"],["Mangolini Parrocini","235","Epic"],["Penguino Pumpkino","235","Epic"],["Avocadini Guffo","225","Epic"],["Ti Ti Ti Sahur","225","Epic"],["Brri Brri Bicus Dicus Bombicus","175","Epic"],["Perochello Lemonchello","160","Epic"],["Bananita Dolphinita","150","Epic"],["Malame Amarele","140","Epic"],["Bambini Crostini","135","Epic"],["Trulimero Trulicina","125","Epic"],["Avocadini Antilopini","115","Epic"],["Brr Brr Patapim","100","Epic"],["Cappuccino Assassino","75","Epic"],
+  ["Seraphino Gruyero","1.9K","Legendary"],["Buho de Fuego","1.85K","Legendary"],["Electro Quacko","1.85K","Legendary"],["Sealo Regalo","1.83K","Legendary"],["Sigma Girl","1.8K","Legendary"],["Puffaball","1.5K","Legendary"],["Chocco Bunny","1.4K","Legendary"],["Buho del Cielo","1.35K","Legendary"],["Sigma Boy","1.35K","Legendary"],["Pi Pi Watermelon","1.3K","Legendary"],["Quackula","1.27K","Legendary"],["Pandaccini Bananini","1.25K","Legendary"],["Bandito Axolito","1.23K","Legendary"],["Cocosini Mama","1.2K","Legendary"],["Pipi Potato","1.1K","Legendary"],["Strawberrelli Flamingelli","1.1K","Legendary"],["Caramello Filtrello","1.05K","Legendary"],["Blueberrinni Octopusini","1K","Legendary"],["Clickerino Crabo","1K","Legendary"],["Quivioli Ameleonni","900","Legendary"],["Glorbo Fruttodrillo","750","Legendary"],["Lionel Cactuseli","650","Legendary"],["Chef Crabracadabra","600","Legendary"],["Ballerina Cappuccina","500","Legendary"],["Chimpanzini Bananini","300","Legendary"],["Burbaloni Loliloli","200","Legendary"],
+  ["Griffin","400M","Secret"],["Dragon Aquanini","375M","Secret"],["Dragon Gingerini","350M","Secret"],["Hydra Dragon Cannelloni","300M","Secret"],["Dragon Cannelloni","250M","Secret"],["La Supreme Combinasion","200M","Secret"],["Los Spaghettis","70M","Secret"],["Sammyni Fattini","70M","Secret"],["Festive 67","67M","Secret"],["Spaghetti Tualetti","60M","Secret"],["Hopilikalika Hopilikalako","55M","Secret"],["Nacho Spyder","50M","Secret"],["Rosetti Tualetti","50M","Secret"],["Gold Gold Gold","45M","Secret"],["Jolly Jolly Sahur","45M","Secret"],["Ketchuru and Musturu","42.5M","Secret"],["La Romantic Grande","40M","Secret"],["Orcaledon","40M","Secret"],["Swaggy Bros","40M","Secret"],["Tictac Sahur","37.5M","Secret"],["Dug Dug Dug","35M","Secret"],["Ketupat Kepat","35M","Secret"],["La Taco Combinasion","35M","Secret"],["Tang Tang Keletang","33.5M","Secret"],["Lovin Rose","32.5M","Secret"],["Los Tacoritas","32M","Secret"],["Eviledon","31.5M","Secret"],
+  ["Spyder Elephant","1B","OG"],["Strawberry Elephant","750M","OG"],["Headless Horseman","600M","OG"],["Meowl","600M","OG"],["John Pork","500M","OG"],["Skibidi Toilet","450M","OG"]
+];
+const parseIncome = x => { const m=String(x).match(/^([0-9.]+)([KMB]?)$/); if(!m)return null; return Number(m[1])*({"":1,K:1e3,M:1e6,B:1e9}[m[2]]); };
+const SAB = {};
+SAB_ROWS.forEach(([n,inc,r])=>SAB[n]={v:parseIncome(inc),tv:null,d:null,demand:null,t:null,r,s:"community",c:r});
+// LootVillage topluluk takas puanları (sayfada listelenen güncel referans değerleri).
+// Puanlar kaynak sitesinin kendi ölçeğidir; gelir/saniye ve gerçek para ile karıştırılmamalıdır.
+const SAB_TRADE = [
+ ["Strawberry Elephant",4560000,"OG","Very High"],["Griffin",4400000,"Secret","Very Low"],["Skibidi Toilet",4050000,"OG","Very Low"],["Cerberus",1650000,"Secret","Very Low"],["Headless Horseman",875000,"OG","High"],["Signore Carapace",208000,"Secret","Medium"],["Elefanto Frigo",113000,"Secret","Very High"],["Meowl",75000,"OG","Very Low"],["Antonio",70000,"Secret","High"],["Dragon Gingerini",40000,"Secret","High"],["Hydra Bunny",15500,"Secret","High"],["Fishino Clownino",15000,"Secret","High"],["Tirilikalika Tirilikalako",11000,"Secret","Low"],["Phoenix",9000,"Secret","Very High"],["Hydra Dragon Cannelloni",7500,"Secret","Very Low"],["Plant Bros",7300,"Secret","High"],["Sammyni Spookyni",6880,"Secret","Very High"],["Los Dragons",6500,"Secret","Very High"],["Hydra Serpent",3500,"Secret","Very High"],["Dragon Cannelloni",3400,"Secret","Very High"],["Popcuru and Fizzuru",3100,"Secret","Very Low"],["La Casa Boo",3000,"Secret","Very Low"],["Los Chillis",2750,"Secret","High"],["Kraken",2500,"Secret","Very High"],["ketupat bros",2450,"Secret","Very Low"],["Digi Narwhal",2400,"Secret","Very Low"],["Los Sekolahs",2150,"Secret","High"],["Reinito Sleighito",2150,"Secret","High"],["Cooki and Milki",2100,"Secret","Very Low"],["Rosey and Teddy",2100,"Secret","Very Low"],["Los Amigos",2050,"Secret","High"],["Venuspino",1900,"Secret","Very High"],["Ginger Gerat",1850,"Secret","Very Low"],["Festive 67",1750,"Secret","High"],["Money Money Reindeer",1750,"Secret","High"],["Spooky and Pumpky",1600,"Secret","High"],["Fragrama and Chocrama",1500,"Secret","High"],["La Food Combinasion",1450,"Secret","High"],["Love Love Bear",1400,"Secret","Very Low"],["Sammyni Fattini",1350,"Secret","High"],["Orchidox",1250,"Secret","Very High"],["Money Money Bros",1230,"Secret","High"],["Capitano Moby",1100,"Secret","High"],["Celestial Pegasus",1100,"Secret","High"],["Pengolino Nuvoletto",1050,"Rare","Very Low"],["Draculino",1000,"Secret","Very High"],["Kalika Bros",920,"Secret","Very High"],["Foxini Lanternini",900,"Secret","Very Low"],["Holy Arepa",900,"Common","Very Low"],["Burguro And Fryuro",875,"Secret","Very Low"],["La Secret Combinasion",800,"Secret","Very Low"]
+];
+SAB_TRADE.forEach(([n,tv,r,demand])=>{if(!SAB[n])SAB[n]={v:null,tv,d:null,demand,t:null,r,s:"LootVillage",c:r};else Object.assign(SAB[n],{tv,demand,r,c:r,s:"LootVillage"})});
+
+
+/* Grow a Garden: pet değerleri (growagardentradevalues.com / Value List, "Tokens (mid-life)").
+   Birim: Trade Token (t). Değer petin kilosuna, yaşına ve mutasyonuna göre değişir; bu liste orta yaş referansıdır.
+   Satır biçimi: [nadirlik, tier, token, [petler]] */
+const GAG_ROWS=[
+ ["Mythical","S+",484091,["Black Swan"]],["Divine","S+",425000,["Blue Lobster Thermidor"]],["Legendary","A",150000,["Calico"]],
+ ["Mythical","S",81841,["Albino Peacock"]],["Prismatic","S+",44915,["Giant Scorpion"]],["Divine","S+",38500,["Wind Wyvern"]],
+ ["Prismatic","S+",24898,["Blue Whale"]],["Legendary","A",15000,["German Shepherd"]],["Divine","S+",3398,["Elephant"]],
+ ["Divine","S+",975,["Raccoon"]],["Prismatic","S+",965,["Kitsune"]],["Prismatic","S+",952,["Birb"]],["Prismatic","S+",823,["Peryton"]],
+ ["Divine","S+",669,["French Fry Ferret"]],["Divine","S+",596,["T-Rex"]],["Prismatic","S+",582,["New Year's Dragon"]],
+ ["Divine","S+",576,["Fennec Fox","Spinosaurus"]],["Divine","S",537,["Queen Bee"]],["Divine","S+",483,["Red Fox"]],
+ ["Legendary","A",482,["Meerkat"]],["Prismatic","S+",476,["Headless Horseman"]],["Prismatic","S+",441,["Ice Golem"]],
+ ["Prismatic","S+",390,["Gold Finch"]],["Divine","S+",386,["Ruby Squid"]],["Divine","S+",383,["Carnival Elephant","Cockatrice","Yeti"]],
+ ["Mythical","S",380,["Kappa"]],["Divine","S+",380,["Tiger"]],["Divine","S+",377,["Disco Bee"]],["Mythical","S",374,["Mimic Octopus"]],
+ ["Divine","S+",369,["Golden Goose"]],["Legendary","A",358,["Spider"]],["Mythical","S+",357,["Butterfly"]],["Common","D",350,["Golem"]],
+ ["Divine","S+",336,["Diamond Panther"]],["Mythical","S",334,["Barn Owl"]],["Divine","S+",316,["Frost Dragon"]],
+ ["Divine","S+",300,["Lion","Mummy"]],["Mythical","S",288,["Echo Frog"]],["Mythical","S",284,["Praying Mantis"]],
+ ["Divine","S+",275,["Dragonfly"]],["Mythical","S",237,["Brontosaurus"]],["Prismatic","S+",194,["Corrupted Kitsune"]],
+ ["Legendary","A",191,["Frog"]],["Rare","B",188,["Seal"]],
+ ["Divine","S+",187,["Bearded Dragon","Blood Owl","Cerberus","Chimera","Chinchilla","Christmas Spirit","Diamond Dragonfly","Green Bean","Griffin","Hex Serpent","Hydra","Krampus","Lich","Lioness","Lobster Thermidor","Luminous Sprite","Mizuchi","Orchid Mantis","Phoenix","Raiju","Reaper","Red Panda","Red Rose Fox","Red-Nosed Reindeer","Space Squirrel","Star Wolf","Swan","Water Buffalo","White Tiger"]],
+ ["Rare","B",157,["Orangutan"]],["Legendary","A",137,["Capybara"]],["Divine","S",123,["Easter Bunny"]],["Legendary","A",120,["Bald Eagle"]],
+ ["Mythical","S+",104,["Nyala"]],["Rare","B",94,["Sea Turtle"]],["Mythical","S",90,["Koi"]],["Rare","A",88,["Spring Bee"]],
+ ["Legendary","A",79,["Moon Cat"]],["Rare","B",72,["Orange Tabby"]],["Rare","B",56,["Rooster"]],["Divine","A",54,["Wendigo"]],["Legendary","A",42,["Silver Monkey"]],
+ ["Mythical","S",34,["Ankylosaurus","Apple Gazelle","Arctic Fox","Axolotl","Bear Bee","Black Cat","Brown Mouse","Brown Owl","Camel","Candy Squirrel","Chicken Zombie","Chimpanzee","Cocoa Cat","Cooked Owl","Crocodile","Dark Spriggan","Dilophosaurus","Drake","Eggnog Chick","Firefly","Frost Squirrel","Galah Cockatoo","Giant Ant","Glimmering Sprite","Goblin Gardener","Goblin Miner","Golden Bee","Golden Piggy","Grey Mouse","Hamster","Hazehound","Hootsie Roll","Hyacinth Macaw","Junkbot","Lemon Lion","Lyrebird","Mantis Shrimp","Mistletoad","Mochi Mouse","Moose","New Year's Chimp","Night Owl","Nutcracker","Owl","Pack Bee","Pack Mule","Peach Wasp","Penguin","Pterodactyl","Red Giant Ant","Rhino","Sapphire Macaw","Show Pony","Spaghetti Sloth","Spriggan","Squirrel","Sugar Glider","Summer Kiwi","Geode Turtle","Ghost Bear","Glass Cat"]],
+ ["Uncommon","C",28,["Pig"]],
+ ["Legendary","A",19,["Amethyst Beetle","Ash Raven","Bear on Bike","Blood Hedgehog","Blood Kiwi","Caterpillar","Celebration Puppy","Champion Beetle","Cheetah","Corrupted Kodama","Cow","Cuckoo","Emerald Snake","Football","Giraffe","Gnome","Gorilla Chef","Grizzly Bear","Gummy Bear","Hippo","Hotdog Daschund","Idol Chipmunk","Iguana","Iguanodon","Imp","Jerboa","Kodama","Mallard","Mandrake","Marmot","Marshmallow Lamb","Mole","Moth","Ostrich","Pachycephalosaurus","Panda","Parasaurolophus","Petal Bee","Pine Beetle","Pink Panda","Polar Bear","Radioactive Stegosaurus","Raptor","Reindeer","Sand Snake","Santa Bear","Scarlet Macaw","Sea Otter","Seedling","Shroomie","Silver Dragonfly","Silver Piggy","Snail","Specter","Stegosaurus","Stork","Sushi Bear","Tanchozuru","Tanuki","Tarantula Hawk","Tomb Marmot","Trapdoor Spider","Triceratops","Turtle","Wisp","Wolf","Woody","Firework Sprite","Flamingo"]],
+ ["Uncommon","C",17,["Bee"]],["Legendary","A",12,["Peacock"]],["Uncommon","C",9,["Cat"]],
+ ["Rare","B",5,["Honey Bee","Hummingbird","Kiwi","Messenger Pigeon","Monkey","Nihonzaru","Pancake Mole","Partridge","Performer Seal","Pixie","Red Squirrel","Sheckling","Snowman Soldier","Spotted Deer","Topaz Snail","Toucan","Tree Frog","Tsuchinoko","Turtle Dove","Wasp","Wind-Up Rat","Woodpecker","Zebra","Bone Dog","Firemite","Flame Bee","Goblin"]],
+ ["Uncommon","C",2,["Angora Goat","Bacon Pig","Bat","Black Bunny","Blue Jay","Cardinal","Chicken","Clam","Deer","Elk","Farmer Chipmunk","French Hen","Goat","Hyena","Hyrax","Jackalope","Maneki-neko","New Year's Bird","Pink Bunny","Salmon","Scarab","Shiba Inu","Sunny-Side Chicken","Unicycle Monkey","Armadillo","Badger","Beaver","Chocolate Bunny","Chubby Chipmunk","Easter Egg Chick","Gift Rat","Hedgehog"]],
+ ["Common","D",1,["Dog","Bagel Bunny","Black Bird","Bunny","Chipmunk","Christmas Gorilla","Crab","Crow","Dairy Cow","Fortune Squirrel","Golden Lab","Ladybug","Oxpecker","Pumpkin Rat","Red Dragon","Robin","Seagull","Smithing Dog","Snow Bunny","Snowman Builder","Starfish","Termite"]]
+];
+const GAG={};
+GAG_ROWS.forEach(([r,tier,v,names])=>names.forEach(n=>GAG[n]={v,p:null,d:null,t:null,r,tier,s:"growagardentradevalues.com",c:r}));
+
+const GAMES={
+  "Blox Fruits":{
+    note:"Kaynak: bloxfruitsvalues.com. ✱ = topluluk listesinden eklenen değer. Perm değeri olmayan meyvelerde Perm düğmesi kapalıdır.",
+    items:BF,
+    stock:{sample:false,normalHours:4,mirageHours:2,normal:[],mirage:[],demo:{normal:["Rocket","Spin","Blade","Flame"],mirage:["Dough","Buddha","Spirit","Quake"]},prices:{"Rocket":[5000,50],"Spin":[7500,75],"Blade":[30000,100],"Flame":[250000,550]}}
+  },
+  "Steal a Brainrot":{
+    note:"Takas puanları: LootVillage topluluk referansı. Temel kazanç ($/s) ayrı gösterilir. Kaynakta puanı olmayan eşyalar için değer uydurulmaz; mutasyon ve trait değerleri henüz ayrı varyant olarak eklenmedi.",
+    items:SAB
+  },
+  "Grow a Garden":{
+    note:"Kaynak: growagardentradevalues.com Value List (orta yaş / mid-life Trade Token). Değer petin kilosuna, yaşına ve mutasyonuna göre değişir; buradakiler ortalama referanstır. Sitenin kendi içinde tutarsız rakamları var (aynı pet farklı bölümlerde farklı yazılmış), bu yüzden liste tahmindir. Ürün (crop) değerleri henüz eklenmedi.",
+    items:GAG
+  },
+  "Adopt Me":{
+    note:"Petler ve Game Pass ayrı kategorilerdedir: Petler için topluluk puanı gösterilir; Game Pass sekmesinde yalnızca bilgilendirme/fiyat bilgisi bulunur. Paylaşılan AdoptMeTradingValues listesi Ride Potion (RP) ölçeği kullanır; buradaki pet puanları RP ile aynı ölçek değildir. Game Pass fiyatları değişebilir ve pet takas değerine dahil edilmez.",
+    items:(()=>{
+      const pets={"Bat Dragon":316,"Shadow Dragon":214,"Giraffe":147,"Frost Dragon":100,"Owl":77.1,"Giant Panda":69.3,"Blazing Lion":63.3,"Parrot":61.9,"Crow":56.2,"Evil Unicorn":48,"Arctic Reindeer":42,"Hedgehog":40,"Turtle":21.6,"Kangaroo":16.6,"Dalmatian":48,"Albino Monkey":48,"Cow":31,"Flamingo":21,"Elephant":13.2,"Crocodile":11.4};
+      const out=mk(pets);
+      Object.entries(out).forEach(([n,d])=>{d.r="Pet";d.c="pet";d.s="TheAdoptMeValues"});
+      const passes=[
+        ["VIP",640,"Satışta"],["Premium Plots",379,"Satışta"],["+1 Pet Pen Slot",295,"Satışta"],["Cozy Home Lure",1020,"Satışta"],["Millionaire Pack",1060,"Satışta"],
+        ["Pet Handler Pro Certificate",250,"Takas edilebilir eşya; 30 gün kullanım"]
+      ];
+      passes.forEach(([n,rb,status])=>out[n]={v:null,p:null,d:null,t:null,r:"Gamepass",s:"Bloxed.gg / Adopt Me Wiki",c:"gamepass",rb:rb.toLocaleString("en-US")+" Robux",status});
+      return out;
+    })()
+  }
+};
+const NAMES=Object.keys(GAMES);
+const PERM=" [Perm]";
+const ADS=true; // reklam alanlarını göstermek için true, gizlemek için false
+const adHtml=()=>`<div class="adslot">Reklam alanı<br><span>Reklam kodu (örn. AdSense) buraya gelecek</span></div>`;
+let STOCK_URL=""; // gerçek stok verisinin JSON adresi (boşsa örnek veri gösterilir)
+const K_USER="ty2_user", K_TR="ty3_trades";
+const CAT={fruit:"Meyveler",pet:"🐾 Petler",gamepass:"🎟️ Game Pass",limited:"Limited",Common:"Common",Uncommon:"Uncommon",Rare:"Rare",Epic:"Epic",Legendary:"Legendary",Mythic:"Mythic",Mythical:"Mythical","Brainrot God":"Brainrot God",Secret:"Secret",OG:"OG",Divine:"Divine",Prismatic:"Prismatic"};
+const RAR={Divine:"Divine",Prismatic:"Prismatic",Pet:"Pet",Gamepass:"Game Pass",Limited:"Limited",Mythical:"Mitolojik",Legendary:"Efsanevi",Rare:"Nadir",Uncommon:"Az bulunan",Common:"Yaygın",Epic:"Epic",Mythic:"Mythic","Brainrot God":"Brainrot God",Secret:"Secret",OG:"OG"};
+const TREND={Unstable:"Dengesiz",Stable:"Sabit",Overpaid:"Üstüne ödeniyor",Underpaid:"Altında ödeniyor",Fluctuating:"Dalgalı"};
+
+/* ================= YARDIMCILAR ================= */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const get=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const set=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+const del=k=>{try{localStorage.removeItem(k)}catch(e){}};
+const isPerm=it=>it.endsWith(PERM);
+const baseName=it=>isPerm(it)?it.slice(0,-PERM.length):it;
+function val(g,it){const d=GAMES[g].items[baseName(it)];if(!d)return 0;if(isBrainrot(g))return d.tv==null?null:d.tv;return isPerm(it)?(d.p||0):d.v}
+const total=(g,arr)=>arr.reduce((s,x)=>s+(val(g,x)||0),0);
+function fmt(n){
+  if(n===null||n===undefined)return"—";
+  const f=(x,u)=>(Math.round(x*100)/100).toString().replace(/\.0+$/,"")+u;
+  if(n>=B)return f(n/B,"B"); if(n>=M)return f(n/M,"M"); if(n>=K)return f(n/K,"K"); return String(Math.round(n));
+}
+const isBrainrot=g=>g==="Steal a Brainrot";
+const isGag=g=>g==="Grow a Garden";
+const fmtTok=n=>n==null?"—":Math.round(n).toLocaleString("en-US")+" t";
+const fmtItem=(g,n)=>isBrainrot(g)?(n==null?"Değer yok":fmt(n)+" puan"):isGag(g)?fmtTok(n):fmt(n);
+const fmtTotal=(g,n)=>isBrainrot(g)?fmt(n)+" puan":isGag(g)?fmtTok(n):fmt(n);
+
+function toast(t){const e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("on"),1500)}
+function ago(t){const m=Math.floor((Date.now()-t)/60000);if(m<1)return"az önce";if(m<60)return m+" dk önce";const h=Math.floor(m/60);return h<24?h+" saat önce":Math.floor(h/24)+" gün önce"}
+function group(arr){const m={};arr.forEach(x=>m[x]=(m[x]||0)+1);return Object.entries(m)}
+const hasPerm=g=>Object.values(GAMES[g].items).some(d=>d.p);
+
+/* fotoğraf: img/<ad>.png -> .webp -> .jpg, hiçbiri yoksa baş harf */
+const EXTS=["png","webp","jpg"];
+const slug=n=>baseName(n).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+function imgHtml(name,size){
+  const b=baseName(name),s=slug(b);
+  return `<span class="ph ${size}" data-l="${esc(b.charAt(0))}"><img src="img/${s}.png" data-s="${s}" data-e="0" alt="" onload="this.parentNode.classList.add('ok')" onerror="imgErr(this)"></span>`;
+}
+function imgErr(el){
+  const i=+el.dataset.e+1;
+  if(i<EXTS.length){el.dataset.e=i;el.src="img/"+el.dataset.s+"."+EXTS[i]}else el.remove();
+}
+
+function loadTrades(){
+  try{const d=JSON.parse(get(K_TR));if(Array.isArray(d))return d}catch(e){}
+  const n=Date.now(),m=(g,u,c,h,w,a)=>({id:crypto.randomUUID(),game:g,user:u,contact:c,have:h,want:w,t:n-a*60000});
+  const s=[
+    m("Blox Fruits","Mehmet_TR","@mehmet",["Dough","Portal","Buddha"],["Spirit","T-Rex"],12),
+    m("Blox Fruits","Zeynep_Rbx","zeynep#1234",["Spirit","Mammoth"],["Dough"],40),
+    m("Blox Fruits","DemirX","@demirx",["Gas"],["Portal","Buddha","Mammoth"],90),
+    m("Blox Fruits","Cem_BF","cem#5555",["Kitsune"],["Venom","Control"],120),
+    m("Blox Fruits","Elif_R","@elif",["Venom","Control"],["Kitsune"],150),
+    m("Steal a Brainrot","BrainrotKral","@kral",["Tung Tung Tung Sahur"],["Graipuss Medussi"],25),
+    m("Steal a Brainrot","Ece_58","ece#9988",["Graipuss Medussi","Los Tralaleritos"],["Dragon Cannelloni"],70),
+    m("Adopt Me","PetciAli","@petciali",["Frost Dragon"],["Shadow Dragon"],30),
+    m("Adopt Me","Selin_AM","selin#4321",["Shadow Dragon"],["Frost Dragon","Turtle"],55)
+  ];
+  saveTrades(s);return s;
+}
+function saveTrades(a){set(K_TR,JSON.stringify(a))}
+
+/* ================= GİRİŞ: Google + Roblox doğrulama ================= */
+// Supabase bilgilerini KURULUM.md'deki adımlardan sonra buraya yaz. Boş kalırsa DEMO modu çalışır.
+const SUPABASE_URL="https://tkmnokdvcehvdismbtzn.supabase.co", SUPABASE_KEY="sb_publishable_qfqkv68qtFAOEj7zsYztxA_CAbbWq2q";
+const DEMO=!SUPABASE_URL||!SUPABASE_KEY;
+const K_ACC="ty4_acc";
+let sb=null, MAIL="", PEND=null;
+const isVer=()=>{try{return !!JSON.parse(get(K_ACC)).verified}catch(e){return false}};
+const aErr=m=>{$("err").textContent=m||""};
+const isGmail=e=>/^[^\s@]+@gmail\.com$/i.test(e);
+const RB_CH="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+function showStep(s){$("stepA").classList.toggle("hide",s!=="A");$("stepB").classList.toggle("hide",s!=="B")}
+function finishLogin(acc){set(K_ACC,JSON.stringify(acc));set(K_USER,acc.roblox);aErr("");enter()}
+function goStepB(mail){MAIL=mail;PEND=null;$("accMail").textContent=mail;$("rbCodeBox").classList.add("hide");$("rbStart").textContent="Doğrulama kodu al";showStep("B")}
+const FN_NAME="hyper-worker"; // Supabase > Edge Functions listesindeki fonksiyon adı (slug) ile AYNI olmalı
+async function callFn(body){
+  let res;
+  try{res=await sb.functions.invoke(FN_NAME,{body})}
+  catch(e){throw new Error("Bağlantı hatası: "+(e&&e.message||e))}
+  const {data,error}=res;
+  if(error){
+    let m=error.message||"Sunucu hatası";
+    try{
+      const c=error.context;
+      if(c&&typeof c.text==="function"){
+        const t=await c.text();let j=null;try{j=JSON.parse(t)}catch(e){}
+        m=((j&&(j.error||j.message))||t||m)+" [HTTP "+c.status+"]";
+      }
+    }catch(e){}
+    throw new Error(m);
+  }
+  return data;
+}
+$("demoGo").onclick=()=>{
+  const m=$("demoEmail").value.trim();
+  if(!isGmail(m)){aErr("Geçerli bir Gmail adresi yaz (…@gmail.com).");return}
+  aErr("");goStepB(m);
+};
+$("gBtn").onclick=()=>{if(sb)sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+location.pathname}})};
+$("rbStart").onclick=async()=>{
+  const n=$("rbName").value.trim();
+  if(!/^[A-Za-z0-9_]{3,20}$/.test(n)){aErr("Roblox adı 3-20 karakter olmalı (harf, rakam, _).");return}
+  aErr("");$("rbStart").disabled=true;
+  try{
+    const code=DEMO?"TY-"+Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>RB_CH[b%RB_CH.length]).join(""):(await callFn({action:"start",robloxName:n})).code;
+    PEND={name:n,code};
+    $("rbCode").textContent=code;$("rbCodeBox").classList.remove("hide");$("rbStart").textContent="Yeni kod al";
+  }catch(e){aErr(e.message)}finally{$("rbStart").disabled=false}
+};
+$("rbCheck").onclick=async()=>{
+  if(!PEND)return;
+  aErr("");$("rbCheck").disabled=true;
+  try{
+    if(DEMO){finishLogin({email:MAIL,roblox:PEND.name,robloxId:null,verified:false});return}
+    const r=await callFn({action:"check",robloxName:PEND.name});
+    finishLogin({email:MAIL,roblox:r.roblox,robloxId:r.robloxId,verified:true});
+  }catch(e){aErr(e.message)}finally{$("rbCheck").disabled=false}
+};
+$("logout").onclick=async()=>{
+  try{if(sb)await sb.auth.signOut()}catch(e){}
+  del(K_USER);del(K_ACC);location.reload();
+};
+async function initAuth(){
+  if(DEMO){
+    $("demoBanner").classList.remove("hide");$("demoMail").classList.remove("hide");
+    if(get(K_ACC)&&get(K_USER))enter();
+    return;
+  }
+  $("gBtn").classList.remove("hide");
+  try{
+    await new Promise((ok,no)=>{const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";s.onload=ok;s.onerror=no;document.head.appendChild(s)});
+  }catch(e){aErr("Giriş servisi yüklenemedi, sayfayı yenile.");return}
+  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session)return;
+  const mail=session.user.email||"";
+  if(!isGmail(mail)){await sb.auth.signOut();aErr("Sadece Gmail hesaplarıyla giriş yapılabilir.");return}
+  const {data:p}=await sb.from("profiles").select("roblox_name,roblox_id").eq("user_id",session.user.id).maybeSingle();
+  if(p)finishLogin({email:mail,roblox:p.roblox_name,robloxId:p.roblox_id,verified:true});
+  else goStepB(mail);
+}
+
+/* ================= UYGULAMA ================= */
+const S={game:NAMES[0],sub:"values",sel:{},cat:{}};
+const VAR={}; // kart başına seçili tür: "reg" | "perm"
+NAMES.forEach(g=>S.sel[g]={have:[],want:[]});
+let ME="";
+
+function showScreen(name){
+  ["homeScreen","robloxScreen","comingScreen","gameWorkspace"].forEach(id=>$(id).classList.add("hide"));
+  $(name).classList.remove("hide");
+}
+function enter(){
+  ME=get(K_USER);
+  $("auth").classList.add("hide");$("app").classList.remove("hide");
+  $("me").textContent=ME+(isVer()?" ✓":"");
+  showScreen("homeScreen");
+  render();
+}
+/* ---- MENÜ: yeni oyun eklemek için sadece bu iki listeye bir satır ekle ----
+   soon:true -> kart "Yakında" rozetiyle görünür ve oyun verisi gelene kadar yakında ekranına gider.
+   Oyunu açmak için: GAMES içine aynı adla verisini ekle ve soon'u kaldır. İkonlar icons/ klasöründe. */
+const PLATFORMS=[
+  {id:"Roblox",name:"Roblox",desc:"Oyunlarını keşfet ve takas yap",icon:"icons/blox.webp"},
+  {id:"CS2",name:"Counter-Strike 2",desc:"Pazar ve topluluk alanı",icon:"icons/c2.jpg",soon:"Skin değerleri ve takas eşleştirme hazırlanıyor."},
+  {id:"Valorant",name:"Valorant",desc:"Topluluk ve rehberler",icon:"icons/valorant.jpg",soon:"Topluluk ve rehber içerikleri hazırlanıyor."},
+  {id:"Fortnite",name:"Fortnite",desc:"Topluluk ve içerikler",icon:"icons/fortnite.jfif",soon:"Topluluk ve içerikler hazırlanıyor."}
+];
+const ROBLOX_GAMES=[
+  {id:"Blox Fruits",desc:"Meyve değerleri ve trade",icon:"icons/blox.webp"},
+  {id:"Steal a Brainrot",desc:"Karakter değerleri ve trade",icon:"icons/stealabrainrot.jfif"},
+  {id:"Adopt Me",desc:"Pet değerleri ve trade",icon:"icons/adoptme.png"},
+  {id:"Grow a Garden",desc:"Pet değerleri ve trade",icon:"icons/growagarden.png"},
+  {id:"Murder Mystery 2",desc:"Değerler ve trade",icon:"icons/mm2.png",soon:"Murder Mystery 2 değer listesi hazırlanıyor."}
+];
+const giHtml=(src,name)=>`<span class="gi"><img src="${esc(src)}" alt="" onerror="this.parentNode.classList.add('noimg')">${esc(name.charAt(0))}</span>`;
+const subTile=g=>`<button class="subgameTile" data-subgame="${esc(g.id)}">${giHtml(g.icon,g.id)}<span><strong>${esc(g.id)}</strong>${g.soon?' <span class="soonBadge">Yakında</span>':""}<br><span class="muted small">${esc(g.desc)}</span></span></button>`;
+function renderMenus(){
+  $("platformGrid").innerHTML=PLATFORMS.map(p=>`<button class="gameTile" data-platform="${esc(p.id)}">${giHtml(p.icon,p.name)}<strong>${esc(p.name)}</strong><span class="muted small">${esc(p.desc)}</span>${p.soon?'<span class="soonBadge">Yakında</span>':""}</button>`).join("");
+  $("robloxGrid").innerHTML=ROBLOX_GAMES.map(subTile).join("");
+}
+function openComing(title,crumb,text,back){
+  S.comingBack=back;
+  $("comingTitle").textContent=title;$("comingCrumb").textContent=crumb;$("comingText").textContent=text;
+  $("backHome2").textContent=back==="robloxScreen"?"← Roblox oyunlarına dön":"← Oyunlara dön";
+  showScreen("comingScreen");
+}
+$("platformGrid").addEventListener("click",e=>{
+  const b=e.target.closest("[data-platform]");if(!b)return;
+  const p=PLATFORMS.find(x=>x.id===b.dataset.platform);if(!p)return;
+  if(p.id==="Roblox"){showScreen("robloxScreen");return}
+  openComing(p.name+" yakında","/ "+p.name,p.soon||"Bu oyun için bölüm henüz hazırlanıyor.","homeScreen");
+});
+function openGame(id){
+  const def=ROBLOX_GAMES.find(x=>x.id===id);if(!def)return;
+  if(def.soon||!GAMES[id]){openComing(id+" yakında","/ Roblox / "+id,def.soon||"Bu oyun için bölüm henüz hazırlanıyor.","robloxScreen");return}
+  S.game=id;S.sub="values";
+  if(id==="Adopt Me"&&!S.cat[id])S.cat[id]="pet";
+  $("activeGameName").textContent="/ "+id;
+  showScreen("gameWorkspace");render();
+}
+["robloxGrid","searchGrid"].forEach(gid=>$(gid).addEventListener("click",e=>{const b=e.target.closest("[data-subgame]");if(b)openGame(b.dataset.subgame)}));
+$("backHome").onclick=()=>showScreen("homeScreen");
+$("backHome2").onclick=()=>showScreen(S.comingBack||"homeScreen");
+$("backRoblox").onclick=()=>showScreen("robloxScreen");
+$("gameSearch").addEventListener("input",()=>{
+  const q=$("gameSearch").value.trim().toLowerCase();
+  let shown=0;
+  $("platformGrid").querySelectorAll("[data-platform]").forEach(b=>{const ok=b.textContent.toLowerCase().includes(q);b.classList.toggle("hide",!ok);if(ok)shown++});
+  const hits=q?ROBLOX_GAMES.filter(g=>(g.id+" "+g.desc).toLowerCase().includes(q)):[];
+  $("searchGrid").innerHTML=hits.map(subTile).join("");
+  $("searchWrap").classList.toggle("hide",!hits.length);
+  $("searchEmpty").classList.toggle("hide",!q||shown>0||hits.length>0);
+});
+$("profileBtn").onclick=()=>toast("Profil sayfası sonraki sürümde eklenecek.");
+
+function render(){
+  ["adTop","adVals"].forEach(id=>{$(id).innerHTML=ADS?adHtml():""});
+  $("gameNotice").textContent=isBrainrot(S.game)?"Steal a Brainrot: takas puanları topluluk referansıdır; temel kazanç ($/s) ayrı gösterilir. Kaynakta değeri olmayan eşyalara puan uydurulmaz. Mutasyon ve traitler ayrıca değerlendirilmelidir.":(S.game==="Grow a Garden"?"Grow a Garden: değerler Trade Token (t) cinsinden orta yaş referansıdır; pet kilosu, yaşı ve mutasyonu değeri değiştirir. Değerler resmî değildir, topluluk tahminidir.":S.game==="Adopt Me"?"Adopt Me: Petler ve Game Pass'ler ayrı kategorilerde. Game Pass kartlarında Robux fiyatı gösterilir; bunlar pet takas puanına dahil edilmez. Değerler resmî değildir.":"Değerler topluluk tahminidir. Takasları yalnızca oyunun izin verdiği yöntemlerle yap; şifre veya doğrulama kodu paylaşma.");
+  $("gameTabs").innerHTML=NAMES.map(n=>`<div class="tab ${S.game===n?"on":""}" data-g="${esc(n)}">${esc(n)}</div>`).join("");
+  $("gameTabs").querySelectorAll(".tab").forEach(t=>t.onclick=()=>{S.game=t.dataset.g;render()});
+  const hasStock=!!GAMES[S.game].stock;
+  if(S.sub==="stock"&&!hasStock)S.sub="values";
+  document.querySelectorAll(".subtab").forEach(t=>{
+    if(t.dataset.s==="stock")t.classList.toggle("hide",!hasStock);
+    t.classList.toggle("on",t.dataset.s===S.sub);t.onclick=()=>{S.sub=t.dataset.s;render()}});
+  $("pValues").classList.toggle("hide",S.sub!=="values");
+  $("pTrade").classList.toggle("hide",S.sub!=="trade");
+  $("pStock").classList.toggle("hide",S.sub!=="stock");
+  renderValues();renderSel();renderResults();renderStock();
+}
+
+/* --- değerler sekmesi (kartlar) --- */
+function renderCats(g){
+  const items=Object.values(GAMES[g].items),keys=Object.keys(CAT).filter(k=>items.some(d=>d.c===k)),box=$("cats");
+  if(keys.length<2){box.innerHTML="";S.cat[g]="all";return}
+  const cur=S.cat[g]||"all";
+  box.innerHTML=[["all","Tümü",items.length],...keys.map(k=>[k,CAT[k],items.filter(d=>d.c===k).length])]
+    .map(([k,l,n])=>`<div class="cat ${cur===k?"on":""}" data-c="${k}">${l}<span>${n}</span></div>`).join("");
+}
+$("cats").addEventListener("click",e=>{const c=e.target.closest("[data-c]");if(!c)return;S.cat[S.game]=c.dataset.c;renderValues()});
+function renderValues(){
+  const g=S.game,q=$("vSearch").value.trim().toLowerCase(),perm=hasPerm(g);
+  $("gNote").textContent=GAMES[g].note||"";
+  renderCats(g);
+  const cur=S.cat[g]||"all";
+  const rows=Object.entries(GAMES[g].items).filter(([n,d])=>n.toLowerCase().includes(q)&&(cur==="all"||d.c===cur)).sort((a,b)=>isBrainrot(g)?((b[1].tv??-1)-(a[1].tv??-1)):((b[1].v??-1)-(a[1].v??-1)));
+  $("vGrid").innerHTML=rows.length?rows.map(([n,d])=>{
+    const fruitLike=!d.c||d.c==="fruit",showPerm=perm&&fruitLike;
+    const isP=showPerm&&VAR[g+"|"+n]==="perm"&&!!d.p;
+    const shown=isP?d.p:(isBrainrot(g)?d.tv:d.v);
+    return `<div class="vcard">
+      <div class="vh">${imgHtml(n,"l")}
+        <div><div class="vn">${esc(n)}${d.s==="u"?` <span class="muted" title="Sitede bulunamadı, senin listenden">✱</span>`:""}</div>
+        ${d.r?`<span class="rar r-${d.r}">${RAR[d.r]}</span>`:""}</div></div>
+      ${showPerm?`<div class="seg">
+        <button class="${isP?"":"on"}" data-var="reg" data-i="${esc(n)}">Regular</button>
+        <button class="${isP?"on":""}" data-var="perm" data-i="${esc(n)}" ${d.p?"":'disabled title="Perm değeri yok"'}>Perm</button></div>`:""}
+      <div class="vv">${isBrainrot(g)?(shown==null?"Değer yok":fmt(shown)+" puan"):isGag(g)?fmtTok(shown):(shown==null?"N/A":fmt(shown))}</div>
+      <div class="vm"><span>${isGag(g)?"Tier "+esc(d.tier):isBrainrot(g)?(d.demand?"Talep · "+d.demand:"Talep · veri yok"):("Talep "+(d.d?d.d+"/10":"—"))}</span>${!isBrainrot(g)&&d.t?`<span class="tr-s tr-${esc(d.t)}">${esc(TREND[d.t]||d.t)}</span>`:""}</div>
+      ${isBrainrot(g)&&d.v!=null?`<div class="vm"><span>Temel kazanç</span><b>$${fmt(d.v)}/s</b></div>`:""}
+      ${d.c==="gamepass"||d.c==="limited"?`<div class="vm"><span>Robux fiyatı</span><span>${esc(d.rb||"N/A")}</span></div>`:""}
+      ${d.status?`<div class="vm"><span>Bilgi</span><span>${esc(d.status)}</span></div>`:""}
+      ${d.c==="gamepass"?`<div class="gnote">Bilgi amaçlı liste. Game Pass fiyatı değişebilir; pet takas hesabına eklenmez.</div>`:`<div class="vadd"><button class="ghost sm" data-add="have" data-i="${esc(n)}">+ Elimde</button><button class="ghost sm" data-add="want" data-i="${esc(n)}">+ İstiyorum</button></div>`}
+    </div>`}).join(""):`<div class="empty">Bulunamadı.</div>`;
+}
+$("vSearch").addEventListener("input",renderValues);
+$("vGrid").addEventListener("click",e=>{
+  const v=e.target.closest("[data-var]");
+  if(v){VAR[S.game+"|"+v.dataset.i]=v.dataset.var;renderValues();return}
+  const b=e.target.closest("[data-add]");if(!b)return;
+  const g=S.game,n=b.dataset.i,d=GAMES[g].items[n];
+  const item=n+(VAR[g+"|"+n]==="perm"&&d.p?PERM:"");
+  S.sel[g][b.dataset.add].push(item);
+  toast(item+" eklendi");renderSel();renderResults();
+});
+
+/* --- seçim kutuları --- */
+function renderSel(){
+  const g=S.game,sel=S.sel[g];
+  ["have","want"].forEach(side=>{
+    const T=side==="have"?"Have":"Want";
+    $("ch"+T).innerHTML=group(sel[side]).map(([n,c])=>`<span class="chip x" data-rm="${side}" data-i="${esc(n)}" title="Kaldır">${imgHtml(n,"s")}${esc(n)}${c>1?" ×"+c:""} <i>${fmtItem(g,val(g,n)==null?null:val(g,n)*c)}</i> ✕</span>`).join("")||`<span class="muted small">Henüz item seçmedin.</span>`;
+    $("t"+T).textContent=fmtTotal(g,total(g,sel[side]));
+  });
+}
+["Have","Want"].forEach(T=>{
+  const side=T.toLowerCase(),inp=$("in"+T),dd=$("dd"+T);
+  function options(){
+    const q=inp.value.trim().toLowerCase(),g=S.game,out=[];
+    Object.entries(GAMES[g].items).sort((a,b)=>b[1].v-a[1].v).forEach(([n,d])=>{
+      if(!n.toLowerCase().includes(q))return;
+      out.push(n); if(d.p)out.push(n+PERM);
+    });
+    return out.slice(0,10);
+  }
+  function show(){
+    const g=S.game,list=options();
+    dd.innerHTML=list.map(n=>`<div data-i="${esc(n)}"><span class="nm">${imgHtml(n,"s")}${esc(n)}</span><span class="muted">${isBrainrot(g)?(GAMES[g].items[baseName(n)].tv==null?"Değer yok":fmt(val(g,n))+" puan"):isGag(g)?fmtTok(val(g,n)):fmt(val(g,n))}</span></div>`).join("");
+    dd.classList.toggle("hide",!list.length);
+  }
+  function add(n){S.sel[S.game][side].push(n);inp.value="";dd.classList.add("hide");renderSel();renderResults()}
+  inp.addEventListener("input",show);inp.addEventListener("focus",show);
+  inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const f=dd.querySelector("div");if(f)add(f.dataset.i)}});
+  dd.addEventListener("mousedown",e=>{const d=e.target.closest("[data-i]");if(d){e.preventDefault();add(d.dataset.i)}});
+  inp.addEventListener("blur",()=>setTimeout(()=>dd.classList.add("hide"),120));
+});
+document.addEventListener("click",e=>{
+  const r=e.target.closest("[data-rm]");if(!r)return;
+  const a=S.sel[S.game][r.dataset.rm],i=a.indexOf(r.dataset.i);
+  if(i>-1)a.splice(i,1);renderSel();renderResults();
+});
+$("clear").onclick=()=>{S.sel[S.game]={have:[],want:[]};renderSel();renderResults()};
+
+/* --- ilan ver --- */
+$("post").onclick=()=>{
+  const sel=S.sel[S.game],c=$("contact").value.trim();
+  if(!sel.have.length||!sel.want.length){toast("Hem 'elimde' hem 'istiyorum' seç");return}
+  if(!c){toast("İletişim bilgisi yaz");$("contact").focus();return}
+  const a=loadTrades();
+  a.push({id:crypto.randomUUID(),game:S.game,user:ME,contact:c,have:[...sel.have],want:[...sel.want],t:Date.now(),boost:false,ver:isVer()});
+  saveTrades(a);toast("İlan yayınlandı");renderResults();
+};
+
+/* --- eşleşen tradeler --- */
+function chipsHtml(g,arr,hit){
+  return group(arr).map(([n,c])=>`<span class="chip ${hit&&hit.has(n)?"hit":""}">${imgHtml(n,"s")}${esc(n)}${c>1?" ×"+c:""} <i>${fmtItem(g,val(g,n)==null?null:val(g,n)*c)}</i></span>`).join("");
+}
+function renderResults(){
+  const g=S.game,sel=S.sel[g],all=loadTrades().filter(t=>t.game===g);
+  const H=new Set(sel.have),W=new Set(sel.want),hasSel=sel.have.length||sel.want.length;
+  const myHave=total(g,sel.have),F=x=>isGag(g)?fmtTok(x):fmt(x);
+  let rows=all.map(t=>{
+    const gives=t.have.some(x=>W.has(x));
+    const asks=t.want.some(x=>H.has(x));
+    return {t,rank:(gives&&asks)?2:(gives||asks)?1:0};
+  });
+  if(hasSel) rows=rows.filter(r=>r.rank>0&&r.t.user!==ME);
+  rows.forEach(r=>{r.diff=sel.have.length?myHave-total(g,r.t.want):null});
+  rows.sort((a,b)=>(b.t.boost?1:0)-(a.t.boost?1:0)||b.rank-a.rank||(a.diff!==null&&b.diff!==null?Math.abs(a.diff)-Math.abs(b.diff):b.t.t-a.t.t));
+  $("resTitle").textContent=hasSel?`Seçimine uygun tradeler (${rows.length})`:`Tüm tradeler (${rows.length})`;
+
+  $("results").innerHTML=rows.length?rows.map(({t,rank,diff},ix)=>{
+    const vw=total(g,t.want),vh=total(g,t.have);
+    let fair="";
+    if(diff!==null&&vw>0){
+      if(isBrainrot(g)) fair=`<span class="badge b-part">Gelir farkı: ${fmt(diff)}/s · takas fiyatı değildir</span>`;
+      else if(Math.abs(diff)<=vw*0.1) fair=`<span class="badge b-fair">Adil takas</span>`;
+      else if(diff>0) fair=`<span class="badge b-over">Sen +${F(diff)} fazla veriyorsun</span>`;
+      else fair=`<span class="badge b-under">Sen ${F(-diff)} eksik kalıyorsun</span>`;
+    }
+    const rb=rank===2?`<span class="badge b-full">Tam uyum</span>`:rank===1?`<span class="badge b-part">Kısmi uyum</span>`:"";
+    const mine=t.user===ME;
+    return `${ix===2&&ADS?adHtml():""}<article class="tr ${t.boost?"boosted":""}">
+      <div class="top"><div><b>${esc(t.user)}</b>${t.ver?` <span class="vbadge" title="Roblox hesabı doğrulandı">✓</span>`:""} <span class="muted small">· ${ago(t.t)}</span></div><div style="display:flex;gap:6px;flex-wrap:wrap">${t.boost?`<span class="badge b-boost">⭐ Öne çıkan</span>`:""}${rb}${fair}</div></div>
+      <div class="rows">
+        <div><div class="lab">Veriyor · ${isBrainrot(g)?"kazanç toplamı "+fmtTotal(g,vh):"toplam "+F(vh)}</div><div class="chips" style="margin:0">${chipsHtml(g,t.have,W)}</div></div>
+        <div><div class="lab">İstiyor · ${isBrainrot(g)?"kazanç toplamı "+fmtTotal(g,vw):"toplam "+F(vw)}</div><div class="chips" style="margin:0">${chipsHtml(g,t.want,H)}</div></div>
+      </div>
+      <div class="acts">${mine?`<button class="ghost sm" data-del="${t.id}">Sil</button><button class="ghost sm" data-boost="${t.id}" title="Demo: şimdilik ücretsiz, ileride ücretli olacak">${t.boost?"Öne çıkarmayı kaldır":"⭐ Öne çıkar"}</button><span class="muted small">Senin ilanın</span>`:`<button class="ghost sm" data-ct="${t.id}">İletişimi göster</button><span class="muted small" data-out="${t.id}"></span>`}</div>
+    </article>`}).join("")
+    :`<div class="empty">${hasSel?"Bu seçime uygun trade yok. Başka item eklemeyi dene ya da ilan ver.":"Bu oyunda henüz trade yok."}</div>`;
+}
+$("results").addEventListener("click",e=>{
+  const bs=e.target.closest("[data-boost]");
+  if(bs){const a=loadTrades(),t=a.find(x=>x.id===bs.dataset.boost);if(t){t.boost=!t.boost;saveTrades(a);toast(t.boost?"İlan öne çıkarıldı (demo)":"Öne çıkarma kaldırıldı");renderResults()}return}
+  const d=e.target.closest("[data-del]");
+  if(d){if(confirm("İlan silinsin mi?")){saveTrades(loadTrades().filter(x=>x.id!==d.dataset.del));renderResults()}return}
+  const c=e.target.closest("[data-ct]");
+  if(c){const t=loadTrades().find(x=>x.id===c.dataset.ct);if(t){const o=document.querySelector(`[data-out="${c.dataset.ct}"]`);o.textContent=t.contact+" — takası sadece oyun içinde yap.";c.remove()}}
+});
+
+/* ================= STOK ================= */
+const pad2=x=>String(x).padStart(2,"0");
+const fmtT=ms=>{const s=Math.max(0,Math.floor(ms/1000));return pad2(Math.floor(s/3600))+":"+pad2(Math.floor(s/60)%60)+":"+pad2(s%60)};
+const nextReset=h=>{const p=h*3600e3;return Math.ceil((Date.now()+1)/p)*p};
+function stockCard(g,n,st){
+  const d=GAMES[g].items[n];
+  if(!d)return `<div class="vcard"><div class="vh">${imgHtml(n,"l")}<div class="vn">${esc(n)}</div></div><div class="muted small">Değer listesinde yok</div></div>`;
+  const pr=st.prices&&st.prices[n],nf=x=>x.toLocaleString("tr-TR");
+  return `<div class="vcard">
+    <div class="vh">${imgHtml(n,"l")}<div><div class="vn">${esc(n)}</div>${d.r?`<span class="rar r-${d.r}">${RAR[d.r]}</span>`:""}</div></div>
+    <div class="vm"><span>Beli</span><b>${pr?nf(pr[0]):"—"}</b></div>
+    <div class="vm"><span>Robux</span><b>${pr?nf(pr[1]):"—"}</b></div>
+    <div class="vm"><span>Değer</span><b>${fmt(d.v)}</b></div>
+    <div class="vm"><span>Talep ${d.d?d.d+"/10":"—"}</span>${d.t?`<span class="tr-s tr-${esc(d.t)}">${esc(TREND[d.t]||d.t)}</span>`:""}</div>
+  </div>`;
+}
+function renderStock(){
+  const g=S.game,st=GAMES[g].stock;if(!st)return;
+  const box=(title,desc,hrs,list)=>`<div class="stkbox"><div class="stkh">
+    <div><h2>${title}</h2><div class="muted small">${desc}</div></div>
+    <div class="stkt"><div class="timer" data-timer="${hrs}">--:--:--</div><div class="muted small">yenilenme: <span data-reset="${hrs}">--:--</span></div></div></div>
+    <div class="grid">${list.map(n=>stockCard(g,n,st)).join("")||`<div class="empty">Stok verisi bekleniyor.</div>`}</div></div>`;
+  if(location.hash==="#admin"&&!$("stkAdm").innerHTML)buildAdmin();
+  const live=st.normal.length||st.mirage.length;
+  $("stkBody").innerHTML=(st.sample?`<div class="notice">Demo: bu stok gerçek değil, sadece tasarımı göstermek için.</div>`
+    :!live?`<div class="notice">Şu an stok verisi girilmemiş. Geri sayım gerçek yenilenme saatlerine göre çalışıyor; stok içeriği girilince burada görünecek.</div>`
+    :st.updated?`<div class="gnote">Son güncelleme: ${esc(st.updated)}</div>`:"")
+    +box("Normal Stok","Her denizdeki meyve satıcısı. 4 saatte bir yenilenir.",st.normalHours,st.normal)
+    +box("Mirage Stok","Mirage Island'daki gelişmiş meyve satıcısı. 2 saatte bir yenilenir.",st.mirageHours,st.mirage);
+  tickStock();
+}
+function tickStock(){
+  document.querySelectorAll("[data-timer]").forEach(el=>{el.textContent=fmtT(nextReset(+el.dataset.timer)-Date.now())});
+  document.querySelectorAll("[data-reset]").forEach(el=>{el.textContent=new Date(nextReset(+el.dataset.reset)).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})});
+}
+function applyStock(j){
+  const st=GAMES["Blox Fruits"].stock;
+  if(!j||!Array.isArray(j.normal)||!Array.isArray(j.mirage))return;
+  st.normal=j.normal;st.mirage=j.mirage;st.sample=false;st.updated=j.updated||"";
+  if(j.prices)Object.assign(st.prices,j.prices);
+  renderStock();
+}
+function pullStock(){
+  const st=GAMES["Blox Fruits"].stock;
+  if(st.preview||st.sample)return; // önizleme/demo sırasında dosya üzerine yazmasın
+  if(STOCK_URL){
+    fetch(STOCK_URL,{cache:"no-store"}).then(r=>r.json()).then(applyStock).catch(()=>{});
+  }else{
+    const sc=document.createElement("script");sc.src="stock-data.js?t="+Date.now();
+    sc.onload=()=>{applyStock(window.STOCK_DATA);sc.remove()};sc.onerror=()=>sc.remove();
+    document.head.appendChild(sc);
+  }
+}
+function buildAdmin(){
+  $("stkAdm").innerHTML=`<div class="stkbox"><h2>Stok girişi (yönetici)</h2>
+    <label for="admN">Normal stok (virgülle ayır)</label><input type="text" id="admN" placeholder="Rocket, Spin, Blade, Flame">
+    <label for="admM">Mirage stok (virgülle ayır)</label><input type="text" id="admM" placeholder="Dough, Buddha, Spirit, Quake">
+    <div class="acts"><button id="admPrev">Önizle</button><button class="ghost" id="admCopy">İçeriği kopyala</button></div>
+    <div class="muted small" id="admMsg" style="margin-top:6px">Önizleme sadece senin tarayıcında görünür. Herkese göstermek için aşağıdaki içeriği stock-data.js dosyasına yapıştırıp siteyi güncelle.</div>
+    <textarea id="admOut" readonly rows="3" style="width:100%;margin-top:8px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:8px;font:12px monospace"></textarea></div>`;
+  const names={};Object.keys(GAMES["Blox Fruits"].items).forEach(k=>names[k.toLowerCase()]=k);
+  const parse=v=>{const ok=[],bad=[];v.split(",").map(x=>x.trim()).filter(Boolean).forEach(x=>names[x.toLowerCase()]?ok.push(names[x.toLowerCase()]):bad.push(x));return{ok,bad}};
+  const build=()=>{
+    const n=parse($("admN").value),m=parse($("admM").value),bad=[...n.bad,...m.bad];
+    const j={updated:new Date().toLocaleString("tr-TR"),normal:n.ok,mirage:m.ok};
+    $("admOut").value="window.STOCK_DATA="+JSON.stringify(j)+";";
+    $("admMsg").textContent=bad.length?"Listede bulunamadı: "+bad.join(", "):"Tamam. Önizleme sadece senin tarayıcında; herkese göstermek için çıktıyı stock-data.js dosyasına yapıştır.";
+    return j;
+  };
+  $("admPrev").onclick=()=>{const j=build();GAMES["Blox Fruits"].stock.preview=true;applyStock(j)};
+  $("admCopy").onclick=()=>{build();$("admOut").select();try{navigator.clipboard.writeText($("admOut").value)}catch(e){document.execCommand("copy")}};
+}
+setInterval(tickStock,1000);setInterval(pullStock,60000);
+
+/* ================= BAŞLAT ================= */
+if(location.hash==="#demo"){const st=GAMES["Blox Fruits"].stock;st.sample=true;st.normal=st.demo.normal;st.mirage=st.demo.mirage}
+renderMenus();
+initAuth();
+pullStock();
+</script>
+</body>
+</html>
