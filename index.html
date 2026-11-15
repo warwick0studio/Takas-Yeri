@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TakasYeri - V13 (hata ayıklama)</title>
+<title>TakasYeri</title>
+<meta name="robots" content="noindex,nofollow">
 <style>
   :root{--bg:#0f1117;--panel:#181b25;--panel2:#1f2330;--line:#2b3040;--text:#e8eaf0;--muted:#9aa1b5;--accent:#6c8cff;--good:#3ecf8e;--warn:#f5b74a;--bad:#ef6a6a}
   *{box-sizing:border-box}
@@ -116,6 +117,20 @@
   .codeBox{background:var(--panel2);border:1px dashed var(--accent);border-radius:10px;padding:12px;margin-top:12px}
   .codeBox .code{font:800 24px monospace;letter-spacing:2px;color:var(--accent);user-select:all}
   .codeBox ol{margin:8px 0 10px 18px;padding:0;font-size:13px;color:var(--muted)}
+  .cnt{display:inline-block;min-width:18px;padding:0 5px;border-radius:999px;background:var(--bad);color:#fff;font-size:11px;font-weight:700;text-align:center;margin-left:4px}
+  .ovl{position:fixed;inset:0;background:#000b;display:grid;place-items:center;padding:14px;z-index:50}
+  .mbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;width:100%;max-width:560px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden}
+  .mhead{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .mbody{padding:12px 14px;overflow:auto;flex:1}
+  .thread{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer;background:var(--panel2)}
+  .thread:hover{border-color:var(--accent)}
+  .msgs{display:flex;flex-direction:column;gap:6px;min-height:180px}
+  .msg{max-width:80%;padding:7px 11px;border-radius:12px;background:var(--panel2);align-self:flex-start;word-break:break-word;white-space:pre-wrap}
+  .msg.me{background:var(--accent);color:#fff;align-self:flex-end}
+  .msg small{display:block;opacity:.65;font-size:11px;margin-top:2px}
+  .mfoot{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--line);align-items:center}
+  .uname{cursor:pointer;text-decoration:underline dotted}
+  #toast{z-index:60}
   #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#222a45;border:1px solid var(--line);padding:8px 14px;border-radius:10px;font-size:13px;opacity:0;transition:.2s;pointer-events:none}
   #toast.on{opacity:1}
 
@@ -148,19 +163,6 @@
   @media(max-width:520px){.gi{width:76px;height:76px}.subgameTile .gi{width:70px;height:70px}}
   @media(max-width:520px){.homeTop{align-items:stretch;flex-direction:column}.gameTile{min-height:110px}}
 
-  /* rehber (ilk giriş) */
-  #tutorial{position:fixed;inset:0;z-index:50;background:rgba(5,7,12,.78);display:grid;place-items:center;padding:16px}
-  .tutCard{width:100%;max-width:440px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px 22px 18px;text-align:center}
-  .tutIc{font-size:44px}
-  .tutCard h2{font-size:19px;margin:8px 0}
-  .tutCard p{color:var(--muted);margin:0 0 18px}
-  .tutCard p b{color:var(--text)}
-  .tutDots{display:flex;gap:6px;justify-content:center;margin-bottom:16px}
-  .tutDots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
-  .tutDots i.on{background:var(--accent)}
-  .tutBtns{display:flex;gap:8px;align-items:center}
-  .tutBtns .sp{flex:1}
-
 </style>
 </head>
 <body>
@@ -182,7 +184,7 @@
     </div>
 
     <div id="stepB" class="hide" style="margin-top:14px">
-      <div class="muted small">Giriş yapılan hesap: <b id="accMail"></b></div>
+      <div class="muted small">Giriş yapılan hesap: <b id="accMail"></b> <button type="button" class="ghost sm" id="switchAcc" style="margin-left:6px">Başka Gmail ile giriş yap</button></div>
       <label for="rbName">Roblox kullanıcı adın</label>
       <input type="text" id="rbName" maxlength="20" placeholder="Roblox adın" autocomplete="off">
       <button type="button" id="rbStart" style="width:100%;margin-top:10px">Doğrulama kodu al</button>
@@ -207,7 +209,7 @@
   <div class="wrap">
     <div class="bar">
       <h1>Takas<span>Yeri</span></h1>
-      <div class="who"><span class="muted small">Merhaba, <b id="me"></b></span><button class="ghost sm" id="helpBtn">❓ Rehber</button><button class="ghost sm profileBtn" id="profileBtn"> <span>👤</span> Profil</button><button class="ghost sm" id="logout">Çıkış</button></div>
+      <div class="who"><span class="muted small">Merhaba, <b id="me" class="uname"></b></span><button class="ghost sm" id="msgBtn">💬 Mesajlar<span class="cnt hide" id="msgCnt"></span></button><button class="ghost sm profileBtn" id="profileBtn"> <span>👤</span> Profil</button><button class="ghost sm" id="logout">Çıkış</button></div>
     </div>
 
     <section id="homeScreen">
@@ -277,31 +279,19 @@
       </div>
 
       <div class="postRow">
-        <div><label for="contact" style="margin-top:0">İletişim (Discord vb.) — ilan vermek için</label><input type="text" id="contact" maxlength="40" placeholder="@kullanici"></div>
+        <div class="muted small">İlanın giriş yapan herkese görünür. İlgilenenler sana sitedeki sohbetten yazar, iletişim bilgisi paylaşmana gerek yok.</div>
         <button id="post">İlan ver</button>
         <button class="ghost" id="clear">Temizle</button>
       </div>
 
-      <h3 id="resTitle">Uygun tradeler</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3 id="resTitle">Uygun tradeler</h3><button class="ghost sm hide" id="togHid"></button></div>
       <div class="list" id="results"></div>
     </section>
     </section>
   </div>
 </div>
 
-<div id="tutorial" class="hide">
-  <div class="tutCard">
-    <div id="tutBody"></div>
-    <div class="tutDots" id="tutDots"></div>
-    <div class="tutBtns">
-      <button type="button" class="ghost" id="tutSkip">Atla</button>
-      <span class="sp"></span>
-      <button type="button" class="ghost hide" id="tutBack">Geri</button>
-      <button type="button" id="tutNext">İleri</button>
-    </div>
-  </div>
-</div>
-
+<div id="modal" class="ovl hide"></div>
 <div id="toast"></div>
 
 <script>
@@ -335,7 +325,10 @@ const BF_SITE=[
   ["Spring",60*K,1,"Stable","Common"],["Blade",50*K,1,"Stable","Common"],["Spin",7.5*K,1,"Stable","Common"],["Rocket",5*K,1,"Stable","Common"]
 ];
 // Sitede olmayanlar, senin eski listenden: [ad, regular, perm, talep, nadirlik]
-const BF_USER=[];
+const BF_USER=[
+  ["Leopard",40*M,220*M,9,"Mythical"],["Rumble",5.5*M,110*M,8,"Legendary"],
+  ["Barrier",800*K,45*M,3,"Rare"],["Falcon",300*K,12*M,2,"Uncommon"]
+];
 // Gamepass (9, liste tam): [ad, değer, talep, durum, robux fiyatı]
 const BF_PASS=[
   ["Fruit Notifier",2.54*B,9,"Stable","2.7K"],["Dark Blade",750*M,9,"Stable","1.2K"],["Mythical Scrolls",1.08*B,4,"Stable","1.5K"],
@@ -413,7 +406,7 @@ GAG_ROWS.forEach(([r,tier,v,names])=>names.forEach(n=>GAG[n]={v,p:null,d:null,t:
 
 const GAMES={
   "Blox Fruits":{
-    note:"Kaynak: bloxfruitsvalues.com. Değerler topluluk tahminidir.",
+    note:"Kaynak: bloxfruitsvalues.com. ✱ = topluluk listesinden eklenen değer. Perm değeri olmayan meyvelerde Perm düğmesi kapalıdır.",
     items:BF,
     stock:{sample:false,normalHours:4,mirageHours:2,normal:[],mirage:[],demo:{normal:["Rocket","Spin","Blade","Flame"],mirage:["Dough","Buddha","Spirit","Quake"]},prices:{"Rocket":[5000,50],"Spin":[7500,75],"Blade":[30000,100],"Flame":[250000,550]}}
   },
@@ -488,26 +481,182 @@ function imgErr(el){
   if(i<EXTS.length){el.dataset.e=i;el.src="img/"+el.dataset.s+"."+EXTS[i]}else el.remove();
 }
 
-let CLOUD=[];          // Supabase'den gelen ilanlar
-const EXPIRE_H=72;     // ilan kaç saat görünür kalsın
-function loadTrades(){
-  if(!DEMO)return CLOUD;
-  try{const d=JSON.parse(get(K_TR));if(Array.isArray(d))return d}catch(e){}
-  const n=Date.now(),m=(g,u,c,h,w,a)=>({id:crypto.randomUUID(),game:g,user:u,contact:c,have:h,want:w,t:n-a*60000});
-  const s=[
-    m("Blox Fruits","Mehmet_TR","@mehmet",["Dough","Portal","Buddha"],["Spirit","T-Rex"],12),
-    m("Blox Fruits","Zeynep_Rbx","zeynep#1234",["Spirit","Mammoth"],["Dough"],40),
-    m("Blox Fruits","DemirX","@demirx",["Gas"],["Portal","Buddha","Mammoth"],90),
-    m("Blox Fruits","Cem_BF","cem#5555",["Kitsune"],["Venom","Control"],120),
-    m("Blox Fruits","Elif_R","@elif",["Venom","Control"],["Kitsune"],150),
-    m("Steal a Brainrot","BrainrotKral","@kral",["Tung Tung Tung Sahur"],["Graipuss Medussi"],25),
-    m("Steal a Brainrot","Ece_58","ece#9988",["Graipuss Medussi","Los Tralaleritos"],["Dragon Cannelloni"],70),
-    m("Adopt Me","PetciAli","@petciali",["Frost Dragon"],["Shadow Dragon"],30),
-    m("Adopt Me","Selin_AM","selin#4321",["Shadow Dragon"],["Frost Dragon","Turtle"],55)
-  ];
-  saveTrades(s);return s;
+/* ================= İLANLAR + İLGİ + SOHBET (Supabase) ================= */
+let MYID="", LST=[], INT={}, OWNCNT={}, THREADS=[], MSGS={}, PROF={}, SEEN={}, SHOWHID=false;
+let VIEW=null, CUR=null, socTimer=null, lastUn=0, lastSig="", listWarned=false;
+const mapL=r=>({id:r.id,uid:r.user_id,game:r.game,user:r.roblox_name,have:r.have,want:r.want,t:Date.parse(r.created_at),boost:!!r.boost,ver:true});
+const loadTrades=()=>LST;
+const seenKey=()=>"ty_seen_"+MYID;
+const saveSeen=()=>set(seenKey(),JSON.stringify(SEEN));
+
+async function refreshListings(){
+  if(!sb||!MYID)return;
+  const {data,error}=await sb.from("listings").select("*").order("created_at",{ascending:false}).limit(300);
+  if(error){if(!listWarned){listWarned=true;toast("İlanlar yüklenemedi: "+error.message)}return}
+  const next=data.map(mapL);
+  if(JSON.stringify(next)!==JSON.stringify(LST)){LST=next;if(!$("app").classList.contains("hide"))renderResults()}
 }
-function saveTrades(a){set(K_TR,JSON.stringify(a))}
+
+/* --- sohbet verisi --- */
+function thInfo(th){
+  const L=th.listings||{},owner=L.user_id===MYID;
+  return {owner,otherId:owner?th.user_id:L.user_id,other:owner?(PROF[th.user_id]||"Kullanıcı"):(L.roblox_name||"Kullanıcı")};
+}
+const lastTs=th=>{const m=MSGS[th.id]||[];return m.length?Date.parse(m[m.length-1].created_at):Date.parse(th.created_at)};
+function unreadOf(th){
+  const m=MSGS[th.id]||[],seen=SEEN[th.id],{owner}=thInfo(th);
+  let n=m.filter(x=>x.sender_id!==MYID&&Date.parse(x.created_at)>(seen||0)).length;
+  if(owner&&!seen&&!th.closed)n=Math.max(n,1);
+  return n;
+}
+function markSeen(id){const m=MSGS[id]||[];SEEN[id]=m.length?Date.parse(m[m.length-1].created_at):1;saveSeen()}
+
+async function refreshSocial(){
+  if(!sb||!MYID)return;
+  const [a,b]=await Promise.all([
+    sb.from("interests").select("id,listing_id,user_id,status,closed,created_at,listings(user_id,roblox_name,game,have,want)"),
+    sb.from("messages").select("id,interest_id,sender_id,body,created_at").order("created_at",{ascending:true}).limit(1500)
+  ]);
+  if(a.error||b.error)return;
+  INT={};OWNCNT={};THREADS=[];MSGS={};
+  a.data.forEach(r=>{
+    if(r.user_id===MYID)INT[r.listing_id]=r;
+    if(r.status==="yes"){
+      THREADS.push(r);
+      if(r.listings&&r.listings.user_id===MYID)OWNCNT[r.listing_id]=(OWNCNT[r.listing_id]||0)+1;
+    }
+  });
+  b.data.forEach(x=>{(MSGS[x.interest_id]=MSGS[x.interest_id]||[]).push(x)});
+  const need=[...new Set(THREADS.filter(t=>t.listings&&t.listings.user_id===MYID).map(t=>t.user_id))].filter(i=>!PROF[i]);
+  if(need.length){
+    const {data}=await sb.from("profiles").select("user_id,roblox_name").in("user_id",need);
+    (data||[]).forEach(p=>{PROF[p.user_id]=p.roblox_name});
+  }
+  if(VIEW==="thread"&&CUR)markSeen(CUR);
+  const un=THREADS.reduce((s,t)=>s+unreadOf(t),0);
+  const c=$("msgCnt");c.textContent=un;c.classList.toggle("hide",!un);
+  if(un>lastUn)toast("Yeni mesajın var 💬");
+  lastUn=un;
+  const sig=THREADS.map(t=>t.id+":"+t.closed+":"+(MSGS[t.id]||[]).length).join("|")+"#"+Object.values(INT).map(r=>r.listing_id+r.status).join("|");
+  const changed=sig!==lastSig;lastSig=sig;
+  if(VIEW==="thread"&&CUR)drawMsgs();
+  else if(VIEW==="inbox"&&changed)openInbox();
+  if(changed&&!$("app").classList.contains("hide"))renderResults();
+}
+
+async function startSocial(){
+  if(!sb||socTimer)return;
+  try{const {data:{session}}=await sb.auth.getSession();MYID=session?session.user.id:""}catch(e){}
+  if(!MYID)return;
+  try{SEEN=JSON.parse(get(seenKey()))||{}}catch(e){SEEN={}}
+  await refreshListings();await refreshSocial();
+  socTimer=setInterval(()=>{refreshListings();refreshSocial()},6000);
+}
+
+/* --- ilgileniyorum / ilgimi çekmiyor --- */
+async function setInterest(lid,status){
+  if(!sb||!MYID)return;
+  if(status==="no"&&INT[lid]&&INT[lid].status==="yes"&&!confirm("Bu ilanla olan sohbet listenden kalkacak. Emin misin?"))return;
+  const {error}=await sb.from("interests").upsert({listing_id:lid,user_id:MYID,status},{onConflict:"listing_id,user_id"});
+  if(error){toast(/interest_limit/.test(error.message)?"Bugün çok fazla ilgi gönderdin, yarın tekrar dene.":"İşlem yapılamadı");return}
+  await refreshSocial();
+  if(status==="yes"&&INT[lid]){toast("İlan sahibine haber verildi");openThread(INT[lid].id)}
+  else renderResults();
+}
+
+async function doReport(uid,lid,iid){
+  if(!sb||!MYID||!uid)return;
+  if(uid===MYID){toast("Kendini şikayet edemezsin");return}
+  const r=prompt("Şikayet sebebini kısaca yaz (dolandırıcılık, küfür, spam vb.):");
+  if(!r||!r.trim())return;
+  const {error}=await sb.from("reports").insert({target_id:uid,listing_id:lid||null,interest_id:iid||null,reason:r.trim().slice(0,300)});
+  toast(error?"Şikayet gönderilemedi":"Şikayetin alındı, teşekkürler");
+}
+
+/* --- pencere (modal) --- */
+const modal=$("modal");
+function closeModal(){modal.classList.add("hide");modal.innerHTML="";VIEW=null;CUR=null}
+function showModal(html){modal.innerHTML=`<div class="mbox">${html}</div>`;modal.classList.remove("hide")}
+modal.addEventListener("click",e=>{
+  if(e.target===modal||e.target.closest("[data-x]")){closeModal();return}
+  const th=e.target.closest("[data-th]");if(th){openThread(th.dataset.th);return}
+  if(e.target.closest("[data-back]")){openInbox();return}
+  const ct=e.target.closest("[data-closeth]");if(ct){closeThread(ct.dataset.closeth);return}
+  if(e.target.closest("#msgSend"))sendMsg();
+});
+modal.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="msgIn"){e.preventDefault();sendMsg()}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!modal.classList.contains("hide"))closeModal()});
+document.addEventListener("click",e=>{
+  const p=e.target.closest("[data-prof]");if(p){openProfile(p.dataset.prof,p.dataset.pn);return}
+  const r=e.target.closest("[data-rep]");if(r)doReport(r.dataset.rep,r.dataset.rl,r.dataset.rth);
+});
+$("msgBtn").onclick=()=>{if(!MYID){toast("Mesajlar için giriş yapmalısın");return}openInbox()};
+$("me").onclick=()=>{if(MYID)openProfile(MYID,ME)};
+
+function openInbox(){
+  VIEW="inbox";CUR=null;
+  const list=[...THREADS].sort((a,b)=>lastTs(b)-lastTs(a));
+  showModal(`<div class="mhead"><b>Mesajlar</b><button class="ghost sm" data-x>Kapat</button></div><div class="mbody">${
+    list.length?list.map(th=>{
+      const {other,owner}=thInfo(th),L=th.listings||{},u=unreadOf(th),m=MSGS[th.id]||[],last=m.length?m[m.length-1].body:(owner?"Yeni ilgi: "+other+" ilanınla ilgileniyor":"Sohbet açıldı");
+      return `<div class="thread" data-th="${th.id}"><div style="min-width:0"><b>${esc(other)}</b> <span class="muted small">· ${esc(L.game||"")}${th.closed?" · kapalı":""}</span><div class="muted small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:380px">${esc(last)}</div></div>${u?`<span class="cnt">${u}</span>`:""}</div>`;
+    }).join(""):`<div class="empty">Henüz sohbetin yok. Bir ilanda <b>İlgileniyorum</b>'a basınca sohbet açılır; ilanına biri ilgilenince de burada görünür.</div>`
+  }</div>`);
+}
+
+function openThread(id){
+  const th=THREADS.find(x=>x.id===id);if(!th)return;
+  VIEW="thread";CUR=id;markSeen(id);
+  const {owner,otherId,other}=thInfo(th),L=th.listings||{},okG=!!GAMES[L.game];
+  showModal(`<div class="mhead"><div><button class="ghost sm" data-back>←</button> <b class="uname" data-prof="${otherId}" data-pn="${esc(other)}">${esc(other)}</b> <span class="vbadge" title="Roblox hesabı doğrulandı">✓</span></div><div style="display:flex;gap:6px"><button class="ghost sm" data-rep="${otherId}" data-rl="${th.listing_id}" data-rth="${id}">Şikayet</button>${owner&&!th.closed?`<button class="ghost sm" data-closeth="${id}">Sohbeti kapat</button>`:""}<button class="ghost sm" data-x>✕</button></div></div>
+    <div class="mbody">${okG?`<div class="rows" style="display:grid;gap:8px;margin-bottom:10px"><div><div class="lab small muted">${owner?"İlanında verdiğin":"Veriyor"}</div><div class="chips" style="margin:0">${chipsHtml(L.game,L.have||[],null)}</div></div><div><div class="lab small muted">${owner?"İlanında istediğin":"İstiyor"}</div><div class="chips" style="margin:0">${chipsHtml(L.game,L.want||[],null)}</div></div></div>`:""}
+    <div class="notice" style="margin:0 0 10px">Takası sadece oyunun içinde yap. Şifre, kod ya da dışarıdaki bağlantı isteyenlere güvenme. Mesajlarda bağlantı paylaşılamaz.</div>
+    <div class="msgs" id="msgs"></div></div>
+    <div class="mfoot">${th.closed?`<span class="muted small">Bu sohbet kapatıldı.</span>`:`<input type="text" id="msgIn" maxlength="500" placeholder="Mesaj yaz..." autocomplete="off"><button id="msgSend">Gönder</button>`}</div>`);
+  drawMsgs(true);
+  const i=$("msgIn");if(i)i.focus();
+}
+function drawMsgs(force){
+  const box=$("msgs");if(!box||!CUR)return;
+  const m=MSGS[CUR]||[],body=box.parentNode;
+  if(!force&&box.dataset.n===String(m.length))return;
+  const near=force||body.scrollHeight-body.scrollTop-body.clientHeight<80;
+  box.dataset.n=String(m.length);
+  box.innerHTML=m.length?m.map(x=>`<div class="msg ${x.sender_id===MYID?"me":""}">${esc(x.body)}<small>${new Date(x.created_at).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})}</small></div>`).join(""):`<div class="muted small">Henüz mesaj yok. İlk mesajı sen yaz.</div>`;
+  if(near)body.scrollTop=body.scrollHeight;
+}
+async function sendMsg(){
+  const inp=$("msgIn");if(!inp||!CUR||!sb)return;
+  const body=inp.value.trim();if(!body)return;
+  const btn=$("msgSend");btn.disabled=true;
+  const {error}=await sb.from("messages").insert({interest_id:CUR,body});
+  btn.disabled=false;
+  if(error){
+    const m=error.message||"";
+    toast(/links/.test(m)?"Mesajda bağlantı paylaşamazsın.":/rate_limit/.test(m)?"Çok hızlı yazıyorsun, biraz bekle.":/row-level/.test(m)?"Bu sohbet kapatılmış olabilir.":"Mesaj gönderilemedi");
+    return;
+  }
+  inp.value="";await refreshSocial();drawMsgs(true);
+}
+async function closeThread(id){
+  if(!confirm("Sohbeti kapatırsan karşı taraf artık mesaj yazamaz. Emin misin?"))return;
+  const {error}=await sb.from("interests").update({closed:true}).eq("id",id);
+  if(error){toast("Sohbet kapatılamadı");return}
+  await refreshSocial();openThread(id);
+}
+
+async function openProfile(uid,name){
+  if(!sb||!uid)return;
+  VIEW="profile";CUR=null;
+  showModal(`<div class="mhead"><b>${esc(name)}</b><button class="ghost sm" data-x>✕</button></div><div class="mbody"><div class="muted">Yükleniyor...</div></div>`);
+  const {data,error}=await sb.from("listings").select("*").eq("user_id",uid).order("created_at",{ascending:false});
+  if(VIEW!=="profile")return;
+  const ls=error?[]:(data||[]).map(mapL);
+  showModal(`<div class="mhead"><div><b>${esc(name)}</b> <span class="vbadge">✓</span> <span class="muted small">Roblox hesabı doğrulandı</span></div><button class="ghost sm" data-x>✕</button></div>
+  <div class="mbody"><h3 style="margin:0 0 10px">Aktif ilanlar (${ls.length})</h3>${
+    ls.length?ls.map(t=>GAMES[t.game]?`<div class="tr" style="margin-bottom:8px"><div class="small muted">${esc(t.game)} · ${ago(t.t)}</div><div class="rows"><div><div class="lab">Veriyor</div><div class="chips" style="margin:0">${chipsHtml(t.game,t.have,null)}</div></div><div><div class="lab">İstiyor</div><div class="chips" style="margin:0">${chipsHtml(t.game,t.want,null)}</div></div></div></div>`:"").join(""):`<div class="empty">Aktif ilanı yok.</div>`
+  }</div>`);
+}
 
 /* ================= GİRİŞ: Google + Roblox doğrulama ================= */
 // Supabase bilgilerini KURULUM.md'deki adımlardan sonra buraya yaz. Boş kalırsa DEMO modu çalışır.
@@ -546,7 +695,7 @@ $("demoGo").onclick=()=>{
   if(!isGmail(m)){aErr("Geçerli bir Gmail adresi yaz (…@gmail.com).");return}
   aErr("");goStepB(m);
 };
-$("gBtn").onclick=()=>{if(sb)sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+location.pathname}})};
+$("gBtn").onclick=()=>{if(sb)sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+location.pathname,queryParams:{prompt:"select_account"}}})};
 $("rbStart").onclick=async()=>{
   const n=$("rbName").value.trim();
   if(!/^[A-Za-z0-9_]{3,20}$/.test(n)){aErr("Roblox adı 3-20 karakter olmalı (harf, rakam, _).");return}
@@ -566,6 +715,7 @@ $("rbCheck").onclick=async()=>{
     finishLogin({email:MAIL,roblox:r.roblox,robloxId:r.robloxId,verified:true});
   }catch(e){aErr(e.message)}finally{$("rbCheck").disabled=false}
 };
+$("switchAcc").onclick=async()=>{try{if(sb)await sb.auth.signOut()}catch(e){}del(K_USER);del(K_ACC);location.reload()};
 $("logout").onclick=async()=>{
   try{if(sb)await sb.auth.signOut()}catch(e){}
   del(K_USER);del(K_ACC);location.reload();
@@ -604,10 +754,9 @@ function enter(){
   ME=get(K_USER);
   $("auth").classList.add("hide");$("app").classList.remove("hide");
   $("me").textContent=ME+(isVer()?" ✓":"");
-  maybeTutorial();
-  refreshTrades(true);
   showScreen("homeScreen");
   render();
+  startSocial();
 }
 /* ---- MENÜ: yeni oyun eklemek için sadece bu iki listeye bir satır ekle ----
    soon:true -> kart "Yakında" rozetiyle görünür ve oyun verisi gelene kadar yakında ekranına gider.
@@ -649,7 +798,7 @@ function openGame(id){
   S.game=id;S.sub="values";
   if(id==="Adopt Me"&&!S.cat[id])S.cat[id]="pet";
   $("activeGameName").textContent="/ "+id;
-  showScreen("gameWorkspace");render();refreshTrades(true);
+  showScreen("gameWorkspace");render();
 }
 ["robloxGrid","searchGrid"].forEach(gid=>$(gid).addEventListener("click",e=>{const b=e.target.closest("[data-subgame]");if(b)openGame(b.dataset.subgame)}));
 $("backHome").onclick=()=>showScreen("homeScreen");
@@ -664,7 +813,7 @@ $("gameSearch").addEventListener("input",()=>{
   $("searchWrap").classList.toggle("hide",!hits.length);
   $("searchEmpty").classList.toggle("hide",!q||shown>0||hits.length>0);
 });
-$("profileBtn").onclick=()=>toast("Profil sayfası sonraki sürümde eklenecek.");
+$("profileBtn").onclick=()=>{if(!MYID){toast("Profil için giriş yapmalısın");return}openProfile(MYID,ME)};
 
 function render(){
   ["adTop","adVals"].forEach(id=>{$(id).innerHTML=ADS?adHtml():""});
@@ -764,41 +913,16 @@ document.addEventListener("click",e=>{
 });
 $("clear").onclick=()=>{S.sel[S.game]={have:[],want:[]};renderSel();renderResults()};
 
-/* --- ortak ilanlar (Supabase) --- */
-async function refreshTrades(silent){
-  if(DEMO||!sb)return;
-  const since=new Date(Date.now()-EXPIRE_H*3600e3).toISOString();
-  const {data,error}=await sb.from("trades")
-    .select("id,game,user_id,roblox_name,contact,have,want,boost,created_at")
-    .gte("created_at",since).order("created_at",{ascending:false}).limit(500);
-  if(error){console.error("İlanlar alınamadı:",error);if(!silent)toast("İlanlar yüklenemedi");return}
-  CLOUD=data.map(r=>({id:r.id,game:r.game,uid:r.user_id,user:r.roblox_name,contact:r.contact,have:r.have,want:r.want,boost:r.boost,ver:true,t:Date.parse(r.created_at)}));
-  renderResults();
-}
-// 30 saniyede bir yeni ilanları getir
-setInterval(()=>{if(!document.hidden&&!$("gameWorkspace").classList.contains("hide"))refreshTrades(true)},30000);
-
 /* --- ilan ver --- */
 $("post").onclick=async()=>{
-  const sel=S.sel[S.game],c=$("contact").value.trim();
+  const sel=S.sel[S.game];
   if(!sel.have.length||!sel.want.length){toast("Hem 'elimde' hem 'istiyorum' seç");return}
-  if(!c){toast("İletişim bilgisi yaz");$("contact").focus();return}
-  if(DEMO){
-    const a=loadTrades();
-    a.push({id:crypto.randomUUID(),game:S.game,user:ME,contact:c,have:[...sel.have],want:[...sel.want],t:Date.now(),boost:false,ver:isVer()});
-    saveTrades(a);toast("İlan yayınlandı");renderResults();return;
-  }
-  if(!isVer()){toast("İlan vermek için Roblox hesabını doğrulamalısın");return}
-  $("post").disabled=true;
-  const {error}=await sb.from("trades").insert({game:S.game,contact:c,have:sel.have,want:sel.want});
-  $("post").disabled=false;
-  if(error){
-    console.error(error);
-    toast(/ilan limiti/.test(error.message)?"En fazla 10 aktif ilan verebilirsin":"İlan yayınlanamadı");
-    return;
-  }
-  toast("İlan yayınlandı");
-  await refreshTrades(true);
+  if(!sb||!MYID){toast("İlan vermek için giriş yapmalısın");return}
+  const b=$("post");b.disabled=true;
+  const {error}=await sb.from("listings").insert({user_id:MYID,game:S.game,have:[...sel.have],want:[...sel.want]});
+  b.disabled=false;
+  if(error){const m=error.message||"";toast(/listing_limit/.test(m)?"En fazla 20 aktif ilanın olabilir.":/not_verified/.test(m)?"İlan için Roblox hesabını doğrulamalısın.":"İlan yayınlanamadı");return}
+  toast("İlan yayınlandı");await refreshListings();
 };
 
 /* --- eşleşen tradeler --- */
@@ -809,12 +933,15 @@ function renderResults(){
   const g=S.game,sel=S.sel[g],all=loadTrades().filter(t=>t.game===g);
   const H=new Set(sel.have),W=new Set(sel.want),hasSel=sel.have.length||sel.want.length;
   const myHave=total(g,sel.have),F=x=>isGag(g)?fmtTok(x):fmt(x);
-  let rows=all.map(t=>{
+  const isNo=t=>t.uid!==MYID&&INT[t.id]&&INT[t.id].status==="no";
+  const hidN=all.filter(isNo).length;
+  const tb=$("togHid");tb.classList.toggle("hide",!hidN&&!SHOWHID);tb.textContent=SHOWHID?"Gizlediklerimi sakla":"Gizlediklerim ("+hidN+")";
+  let rows=all.filter(t=>SHOWHID||!isNo(t)).map(t=>{
     const gives=t.have.some(x=>W.has(x));
     const asks=t.want.some(x=>H.has(x));
     return {t,rank:(gives&&asks)?2:(gives||asks)?1:0};
   });
-  if(hasSel) rows=rows.filter(r=>r.rank>0&&r.t.user!==ME);
+  if(hasSel) rows=rows.filter(r=>r.rank>0&&r.t.uid!==MYID);
   rows.forEach(r=>{r.diff=sel.have.length?myHave-total(g,r.t.want):null});
   rows.sort((a,b)=>(b.t.boost?1:0)-(a.t.boost?1:0)||b.rank-a.rank||(a.diff!==null&&b.diff!==null?Math.abs(a.diff)-Math.abs(b.diff):b.t.t-a.t.t));
   $("resTitle").textContent=hasSel?`Seçimine uygun tradeler (${rows.length})`:`Tüm tradeler (${rows.length})`;
@@ -829,41 +956,42 @@ function renderResults(){
       else fair=`<span class="badge b-under">Sen ${F(-diff)} eksik kalıyorsun</span>`;
     }
     const rb=rank===2?`<span class="badge b-full">Tam uyum</span>`:rank===1?`<span class="badge b-part">Kısmi uyum</span>`:"";
-    const mine=t.user===ME;
+    const mine=t.uid===MYID,my=INT[t.id],oc=OWNCNT[t.id]||0;
+    const rep=`<button class="ghost sm" data-rep="${t.uid}" data-rl="${t.id}">Şikayet</button>`;
+    let acts;
+    if(mine) acts=`<button class="ghost sm" data-del="${t.id}">Sil</button><button class="ghost sm" data-boost="${t.id}" title="Demo: şimdilik ücretsiz, ileride ücretli olacak">${t.boost?"Öne çıkarmayı kaldır":"⭐ Öne çıkar"}</button>${oc?`<button class="sm" data-inbox="1">💬 ${oc} kişi ilgileniyor</button>`:`<span class="muted small">Senin ilanın · henüz ilgilenen yok</span>`}`;
+    else if(!my||my.status==="no") acts=`<button class="sm" data-int="yes" data-lid="${t.id}">${my?"Tekrar ilgileniyorum":"İlgileniyorum"}</button>${my?"":`<button class="ghost sm" data-int="no" data-lid="${t.id}">İlgimi çekmiyor</button>`}${rep}`;
+    else acts=`<button class="sm" data-chat="${my.id}">💬 Sohbeti aç</button><button class="ghost sm" data-int="no" data-lid="${t.id}">Vazgeç</button>${rep}`;
     return `${ix===2&&ADS?adHtml():""}<article class="tr ${t.boost?"boosted":""}">
-      <div class="top"><div><b>${esc(t.user)}</b>${t.ver?` <span class="vbadge" title="Roblox hesabı doğrulandı">✓</span>`:""} <span class="muted small">· ${ago(t.t)}</span></div><div style="display:flex;gap:6px;flex-wrap:wrap">${t.boost?`<span class="badge b-boost">⭐ Öne çıkan</span>`:""}${rb}${fair}</div></div>
+      <div class="top"><div><b class="uname" data-prof="${t.uid}" data-pn="${esc(t.user)}">${esc(t.user)}</b>${t.ver?` <span class="vbadge" title="Roblox hesabı doğrulandı">✓</span>`:""} <span class="muted small">· ${ago(t.t)}</span></div><div style="display:flex;gap:6px;flex-wrap:wrap">${t.boost?`<span class="badge b-boost">⭐ Öne çıkan</span>`:""}${rb}${fair}</div></div>
       <div class="rows">
         <div><div class="lab">Veriyor · ${isBrainrot(g)?"kazanç toplamı "+fmtTotal(g,vh):"toplam "+F(vh)}</div><div class="chips" style="margin:0">${chipsHtml(g,t.have,W)}</div></div>
         <div><div class="lab">İstiyor · ${isBrainrot(g)?"kazanç toplamı "+fmtTotal(g,vw):"toplam "+F(vw)}</div><div class="chips" style="margin:0">${chipsHtml(g,t.want,H)}</div></div>
       </div>
-      <div class="acts">${mine?`<button class="ghost sm" data-del="${t.id}">Sil</button><button class="ghost sm" data-boost="${t.id}" title="Demo: şimdilik ücretsiz, ileride ücretli olacak">${t.boost?"Öne çıkarmayı kaldır":"⭐ Öne çıkar"}</button><span class="muted small">Senin ilanın</span>`:`<button class="ghost sm" data-ct="${t.id}">İletişimi göster</button><span class="muted small" data-out="${t.id}"></span>`}</div>
+      <div class="acts">${acts}</div>
     </article>`}).join("")
-    :`<div class="empty">${hasSel?"Bu seçime uygun trade yok. Başka item eklemeyi dene ya da ilan ver.":"Bu oyunda henüz trade yok."}</div>`;
+    :`<div class="empty">${hasSel?"Bu seçime uygun trade yok. Başka item eklemeyi dene ya da ilan ver.":"Bu oyunda henüz trade yok. İlk ilanı sen ver!"}</div>`;
 }
 $("results").addEventListener("click",async e=>{
   const bs=e.target.closest("[data-boost]");
   if(bs){
-    if(!DEMO){toast("Öne çıkarma yakında (ücretli olacak)");return}
-    const a=loadTrades(),t=a.find(x=>x.id===bs.dataset.boost);
-    if(t){t.boost=!t.boost;saveTrades(a);toast(t.boost?"İlan öne çıkarıldı (demo)":"Öne çıkarma kaldırıldı");renderResults()}
+    const t=LST.find(x=>x.id===bs.dataset.boost);if(!t||!sb)return;
+    const {error}=await sb.from("listings").update({boost:!t.boost}).eq("id",t.id);
+    if(!error){toast(!t.boost?"İlan öne çıkarıldı (demo)":"Öne çıkarma kaldırıldı");await refreshListings()}
     return;
   }
   const d=e.target.closest("[data-del]");
   if(d){
-    if(!confirm("İlan silinsin mi?"))return;
-    if(DEMO){saveTrades(loadTrades().filter(x=>x.id!==d.dataset.del));renderResults();return}
-    const {error}=await sb.from("trades").delete().eq("id",d.dataset.del);
-    if(error){console.error(error);toast("İlan silinemedi");return}
-    toast("İlan silindi");
-    await refreshTrades(true);
+    if(!confirm("İlan silinsin mi? İlgilenenlerle olan sohbetler de silinir."))return;
+    const {error}=await sb.from("listings").delete().eq("id",d.dataset.del);
+    if(error)toast("Silinemedi");else{await refreshListings();await refreshSocial()}
     return;
   }
-  const c=e.target.closest("[data-ct]");
-  if(c){
-    const t=loadTrades().find(x=>x.id===c.dataset.ct);
-    if(t){const o=document.querySelector(`[data-out="${c.dataset.ct}"]`);o.textContent=t.contact+" — takası sadece oyun içinde yap.";c.remove()}
-  }
+  const it=e.target.closest("[data-int]");if(it){await setInterest(it.dataset.lid,it.dataset.int);return}
+  const ch=e.target.closest("[data-chat]");if(ch){openThread(ch.dataset.chat);return}
+  if(e.target.closest("[data-inbox]"))openInbox();
 });
+$("togHid").onclick=()=>{SHOWHID=!SHOWHID;renderResults()};
 
 /* ================= STOK ================= */
 const pad2=x=>String(x).padStart(2,"0");
@@ -938,34 +1066,6 @@ function buildAdmin(){
   $("admCopy").onclick=()=>{build();$("admOut").select();try{navigator.clipboard.writeText($("admOut").value)}catch(e){document.execCommand("copy")}};
 }
 setInterval(tickStock,1000);setInterval(pullStock,60000);
-
-/* ================= REHBER (ilk giriş) ================= */
-const K_TUT="ty_tutorial_v1";
-const TUT=[
-  {ic:"👋",t:"TakasYeri'ne hoş geldin!",p:"Burada oyun içi itemlerinin değerine bakabilir, takas ilanı verebilir ve sana uygun tradeleri bulabilirsin. Nasıl çalıştığını 1 dakikada gösterelim."},
-  {ic:"📊",t:"1. Item değerlerine bak",p:"Bir oyun seç (örneğin Blox Fruits), sonra <b>Değerler</b> sekmesinde itemlerin topluluk değerini, talebini ve durumunu gör. Üstteki arama kutusuyla item bulabilirsin."},
-  {ic:"🎒",t:"2. Elinde ne var, ne istiyorsun?",p:"Bir itemin kartında <b>+ Elimde</b> (elinde varsa) veya <b>+ İstiyorum</b> (istiyorsan) düğmesine bas. Aynısını <b>Trade</b> sekmesindeki arama kutularından da yapabilirsin."},
-  {ic:"🔎",t:"3. Sana uygun tradeleri gör",p:"Seçtiklerine göre <b>Trade</b> sekmesinde uygun ilanlar kendiliğinden çıkar. <b>Tam uyum</b>: hem verdiğin hem istediğin item eşleşiyor. <b>Kısmi uyum</b>: sadece biri eşleşiyor. Yanındaki rozet takasın adil olup olmadığını gösterir."},
-  {ic:"📣",t:"4. İlan ver, iletişime geç",p:"Uygun ilan yoksa iletişim bilgini (Discord vb.) yazıp <b>İlan ver</b>'e bas; ilanın herkese görünür. Başkasının ilanında <b>İletişimi göster</b>'e basıp ona ulaş."},
-  {ic:"🛡️",t:"Güvenli takas",p:"Şifreni veya doğrulama kodunu asla kimseyle paylaşma. Takası sadece oyunun kendi takas sistemiyle, oyun içinde yap. Değerler resmî değil, topluluk tahminidir."}
-];
-let tutI=0;
-function tutRender(){
-  const s=TUT[tutI],last=tutI===TUT.length-1;
-  $("tutBody").innerHTML=`<div class="tutIc">${s.ic}</div><h2>${s.t}</h2><p>${s.p}</p>`;
-  $("tutDots").innerHTML=TUT.map((_,i)=>`<i class="${i===tutI?"on":""}"></i>`).join("");
-  $("tutBack").classList.toggle("hide",tutI===0);
-  $("tutSkip").classList.toggle("hide",last);
-  $("tutNext").textContent=last?"Başla":"İleri";
-}
-function tutOpen(){tutI=0;tutRender();$("tutorial").classList.remove("hide")}
-function tutClose(){$("tutorial").classList.add("hide");set(K_TUT,"1")}
-function maybeTutorial(){if(!get(K_TUT))tutOpen()}
-$("tutNext").onclick=()=>{if(tutI<TUT.length-1){tutI++;tutRender()}else tutClose()};
-$("tutBack").onclick=()=>{if(tutI>0){tutI--;tutRender()}};
-$("tutSkip").onclick=tutClose;
-$("helpBtn").onclick=tutOpen;
-$("tutorial").addEventListener("click",e=>{if(e.target===$("tutorial"))tutClose()});
 
 /* ================= BAŞLAT ================= */
 if(location.hash==="#demo"){const st=GAMES["Blox Fruits"].stock;st.sample=true;st.normal=st.demo.normal;st.mirage=st.demo.mirage}
