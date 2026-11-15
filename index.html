@@ -369,6 +369,18 @@ const SAB_TRADE = [
  ["Strawberry Elephant",4560000,"OG","Very High"],["Griffin",4400000,"Secret","Very Low"],["Skibidi Toilet",4050000,"OG","Very Low"],["Cerberus",1650000,"Secret","Very Low"],["Headless Horseman",875000,"OG","High"],["Signore Carapace",208000,"Secret","Medium"],["Elefanto Frigo",113000,"Secret","Very High"],["Meowl",75000,"OG","Very Low"],["Antonio",70000,"Secret","High"],["Dragon Gingerini",40000,"Secret","High"],["Hydra Bunny",15500,"Secret","High"],["Fishino Clownino",15000,"Secret","High"],["Tirilikalika Tirilikalako",11000,"Secret","Low"],["Phoenix",9000,"Secret","Very High"],["Hydra Dragon Cannelloni",7500,"Secret","Very Low"],["Plant Bros",7300,"Secret","High"],["Sammyni Spookyni",6880,"Secret","Very High"],["Los Dragons",6500,"Secret","Very High"],["Hydra Serpent",3500,"Secret","Very High"],["Dragon Cannelloni",3400,"Secret","Very High"],["Popcuru and Fizzuru",3100,"Secret","Very Low"],["La Casa Boo",3000,"Secret","Very Low"],["Los Chillis",2750,"Secret","High"],["Kraken",2500,"Secret","Very High"],["ketupat bros",2450,"Secret","Very Low"],["Digi Narwhal",2400,"Secret","Very Low"],["Los Sekolahs",2150,"Secret","High"],["Reinito Sleighito",2150,"Secret","High"],["Cooki and Milki",2100,"Secret","Very Low"],["Rosey and Teddy",2100,"Secret","Very Low"],["Los Amigos",2050,"Secret","High"],["Venuspino",1900,"Secret","Very High"],["Ginger Gerat",1850,"Secret","Very Low"],["Festive 67",1750,"Secret","High"],["Money Money Reindeer",1750,"Secret","High"],["Spooky and Pumpky",1600,"Secret","High"],["Fragrama and Chocrama",1500,"Secret","High"],["La Food Combinasion",1450,"Secret","High"],["Love Love Bear",1400,"Secret","Very Low"],["Sammyni Fattini",1350,"Secret","High"],["Orchidox",1250,"Secret","Very High"],["Money Money Bros",1230,"Secret","High"],["Capitano Moby",1100,"Secret","High"],["Celestial Pegasus",1100,"Secret","High"],["Pengolino Nuvoletto",1050,"Rare","Very Low"],["Draculino",1000,"Secret","Very High"],["Kalika Bros",920,"Secret","Very High"],["Foxini Lanternini",900,"Secret","Very Low"],["Holy Arepa",900,"Common","Very Low"],["Burguro And Fryuro",875,"Secret","Very Low"],["La Secret Combinasion",800,"Secret","Very Low"]
 ];
 SAB_TRADE.forEach(([n,tv,r,demand])=>{if(!SAB[n])SAB[n]={v:null,tv,d:null,demand,t:null,r,s:"LootVillage",c:r};else Object.assign(SAB[n],{tv,demand,r,c:r,s:"LootVillage"})});
+// Eksik temel kazançlar ($/s), Kasım 2026: çoğu stealarot.com (Oct 15, 2026 güncellemesi), son 7'si (*) sadece rblxguide.com.
+// Signore Carapace ve Antonio'yu iki kaynak farklı yazıyor (275M/105M ve 125M/55M), bu yüzden bilerek boş bırakıldı.
+const SAB_INCOME_EXTRA = [
+  ["Cerberus","175M"],["Elefanto Frigo","185M"],["Hydra Bunny","185M"],["Fishino Clownino","120M"],["Tirilikalika Tirilikalako","42.5M"],
+  ["Popcuru and Fizzuru","170M"],["La Casa Boo","100M"],["Los Chillis","75M"],["Kraken","200M"],["ketupat bros","145M"],["Digi Narwhal","200M"],
+  ["Los Sekolahs","110M"],["Reinito Sleighito","140M"],["Cooki and Milki","155M"],["Rosey and Teddy","165M"],["Los Amigos","130M"],["Venuspino","175M"],
+  ["Ginger Gerat","75M"],["Money Money Reindeer","25M"],["Spooky and Pumpky","80M"],["Fragrama and Chocrama","100M"],["La Food Combinasion","90M"],
+  ["Love Love Bear","225M"],["Money Money Bros","47M"],["Capitano Moby","160M"],["Celestial Pegasus","175M"],["Kalika Bros","115M"],
+  ["Foxini Lanternini","115M"],["Burguro And Fryuro","150M"],["La Secret Combinasion","125M"],
+  ["Phoenix","425M"],["Plant Bros","300M"],["Sammyni Spookyni","80M"],["Los Dragons","425M"],["Hydra Serpent","220M"],["Orchidox","155M"],["Draculino","120M"] // * tek kaynak
+];
+SAB_INCOME_EXTRA.forEach(([n,inc])=>{if(SAB[n]&&SAB[n].v==null)SAB[n].v=parseIncome(inc)});
 
 
 /* Grow a Garden: pet değerleri (growagardentradevalues.com / Value List, "Tokens (mid-life)").
@@ -411,7 +423,7 @@ const GAMES={
     stock:{sample:false,normalHours:4,mirageHours:2,normal:[],mirage:[],demo:{normal:["Rocket","Spin","Blade","Flame"],mirage:["Dough","Buddha","Spirit","Quake"]},prices:{"Rocket":[5000,50],"Spin":[7500,75],"Blade":[30000,100],"Flame":[250000,550]}}
   },
   "Steal a Brainrot":{
-    note:"Takas puanları: LootVillage topluluk referansı. Temel kazanç ($/s) ayrı gösterilir. Kaynakta puanı olmayan eşyalar için değer uydurulmaz; mutasyon ve trait değerleri henüz ayrı varyant olarak eklenmedi.",
+    note:"Takas puanları: LootVillage topluluk referansı. Temel kazanç ($/s) ayrı gösterilir. Temel kazançlar stealarot.com ve rblxguide.com kaynaklıdır; Signore Carapace ve Antonio için kaynaklar çelişkili olduğundan kazanç yazılmadı. Kaynakta puanı olmayan eşyalar için değer uydurulmaz; mutasyon ve trait değerleri henüz ayrı varyant olarak eklenmedi.",
     items:SAB
   },
   "Grow a Garden":{
